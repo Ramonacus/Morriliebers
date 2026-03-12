@@ -36,10 +36,16 @@ This design document outlines the implementation of a comprehensive unit testing
 **Development dependencies:**
 ```json
 {
-  "vitest": "^1.0.0",
-  "@vitest/ui": "^1.0.0"
+  "vitest": "^2.1.0",
+  "@vitest/ui": "^2.1.0"
 }
 ```
+
+**Version rationale:**
+- Vitest 2.x provides better ESM support and performance improvements
+- Version 2.1.0 is stable as of March 2026
+- The ^2.1.0 range allows patch updates while staying on the 2.x major version
+- Includes improved TypeScript integration and better mock utilities
 
 ### Configuration
 
@@ -131,23 +137,36 @@ Each module gets a corresponding test file:
 - Generates 1-3 concerts (random but verifiable with mocked Math.random)
 - All concerts scheduled Wed-Sun only (days 3, 4, 5, 6, 0)
 - Concert times between 17:00-23:30
-- Times in 30-minute intervals
+- Times in 30-minute intervals (includes 23:30)
 - No duplicate days within same week
 - Each concert has valid venue
+- Each concert has unique ID
 - Cancellation dates are 20-24 hours before concert
 - Concerts sorted chronologically by date
 - Correct week calculation for reference date
 - Handles edge cases (end of month, year boundaries)
+- Throws error after max attempts (20) when unable to find available day (test by mocking Math.random to always return same day)
+
+**Internal function:** `generateId()` (uses crypto.randomBytes)
+
+Note: This is an internal function but generates IDs used throughout the system. Tests should verify:
+- Generated IDs are hexadecimal strings (32 characters)
+- Multiple calls produce different IDs (uniqueness check with 100 iterations and Set)
+- No need to mock crypto.randomBytes - use actual implementation for uniqueness verification
 
 **Mocking strategy:**
-- Mock `Math.random()` to control random generation
+- Mock `Math.random()` to control random generation (concert count, day selection, time slots)
 - Mock current date with `vi.setSystemTime()`
 - Mock `getRandomVenue()` to return known venues
+- Do NOT mock `crypto.randomBytes()` - use real implementation to verify uniqueness
 
 **Key assertions:**
 - Verify concert count (1-3)
 - Verify day of week for each concert
 - Verify time slots (17:00-23:30, 30-min intervals)
+  - Note: Test should verify the actual implementation behavior (includes 23:30 slot)
+  - The time slot generation has condition `if (hour < 23 || hour === 23)` which is always true
+  - This is implementation quirk but doesn't affect correctness (23:30 is valid concert time)
 - Verify no duplicate days
 - Verify cancellation timing (20-24h before)
 - Verify sort order
@@ -193,23 +212,38 @@ Each module gets a corresponding test file:
 
 ### 3. venues.test.ts
 
-**Function:** `getRandomVenue(): Venue`
+**Module structure note:** Venues are loaded from `config/venues.json` at module initialization via `loadVenues()` function. The `venues` array is exported and can be imported directly for testing.
 
-**Test cases:**
-- Returns valid Venue object
-- Venue has required fields (name, city)
-- Venue may have optional capacity field
-- Randomness can be controlled with Math.random mock
-- All venues in dataset are accessible
+**Exported items:**
+- `venues: Venue[]` - loaded venue array
+- `getRandomVenue(): Venue` - random venue selection function
 
-**Additional tests:**
-- Verify venue data structure
-- Ensure all venue objects are well-formed
-- Test that venue selection is random (without mock)
+**Test cases for getRandomVenue():**
+- Returns valid Venue object from the loaded array
+- Returned venue has required fields (name, city)
+- Randomness can be controlled with Math.random mock to select specific venues
+- Throws error when venues array is empty (requires mocking empty array)
+
+**Test cases for venue data validation:**
+- Import and verify `venues` array is non-empty
+- All venue objects have required `name` property (string)
+- All venue objects have required `city` property (string)
+- Optional `capacity` field, if present, is a string
+
+**Test cases for loadVenues() error handling:**
+Note: `loadVenues()` is not exported, but runs at module initialization. To test error cases:
+- Mock `fs` module before importing venues.ts
+- Test file not found error
+- Test invalid JSON error
+- Test non-array data error
+- Test empty array error
+- Test missing venue.name error
+- Test missing venue.city error
 
 **Mocking strategy:**
-- Mock `Math.random()` to select specific venues
-- Or test statistical distribution over many calls
+- Mock `Math.random()` to select specific venues by index
+- For error testing: mock `fs.readFileSync()` before importing the module in isolated test
+- Use dynamic imports for testing module initialization errors: `await import('./venues.js')`
 
 **Key assertions:**
 - Returned object matches Venue interface
@@ -218,22 +252,38 @@ Each module gets a corresponding test file:
 
 ### 4. storage.test.ts
 
-**Functions:** State serialization and persistence
+**Functions:** `loadState()`, `saveState()`, serialization/deserialization
 
-**Test cases:**
+**Test cases for serialization/deserialization:**
 - Serialize state: converts Date objects to ISO strings
 - Deserialize state: converts ISO strings back to Dates
 - Round-trip preserves all data
-- Handles missing optional fields (cancellationDate, postId, etc.)
-- File write operations (mocked)
-- File read operations (mocked)
-- Error handling for missing files
-- Error handling for corrupted JSON
+- Handles missing optional fields (cancellationDate, postId, weeklyPostId, lastAnnouncementDate)
+
+**Test cases for loadState():**
+- Creates data directory if missing (mocked mkdir)
+- Returns empty state and saves it if file doesn't exist
+- Successfully loads and deserializes existing state file
+- Handles corrupted JSON: creates timestamped backup file, logs warning, returns empty state
+  - Note: Backup logic calls readFile twice (once in try block, once in backup writeFile)
+  - Mock readFile to succeed first, then parse fails, then readFile succeeds again for backup
+- Handles backup failure gracefully (logs error but continues, still returns empty state)
+- Returns empty state if file reading fails initially
+
+**Test cases for saveState():**
+- Creates data directory if missing (mocked mkdir)
+- Serializes state correctly
+- Uses atomic write pattern: writes to temp file first, then renames
+- Verify writeFile called with `.tmp` file first
+- Verify rename called to move temp file to actual state file
+- Throws error if write fails
 
 **Mocking strategy:**
-- Mock `fs/promises` (readFile, writeFile)
-- Control file existence and contents
-- Simulate file system errors
+- Mock `fs/promises` (readFile, writeFile, mkdir, rename)
+- Mock `fs` (existsSync) for synchronous existence checks
+- Control file existence and contents with mock return values
+- Simulate file system errors (ENOENT, EACCES, corrupted JSON)
+- Verify atomic write sequence: writeFile(temp) → rename(temp, actual)
 
 **Key assertions:**
 - Dates correctly serialized to strings
@@ -257,9 +307,10 @@ Each module gets a corresponding test file:
   - Error handling for failed posts
 
 - **Post pinning:**
-  - Successfully pins post
-  - Successfully unpins post
-  - Error handling for pin/unpin failures
+  - Successfully pins post (upsertProfile with pinnedPost)
+  - Successfully unpins post (upsertProfile removes pinnedPost)
+  - Error handling for pin/unpin failures (non-fatal, logged but doesn't throw)
+  - Verify callback function receives existing profile and returns updated profile
 
 - **Multiple operations:**
   - Login called before other operations
@@ -268,9 +319,9 @@ Each module gets a corresponding test file:
 **Mocking strategy:**
 - Mock `@atproto/api` module's BskyAgent
 - Create mock implementations of:
-  - `agent.login()`
-  - `agent.post()`
-  - `agent.api.app.bsky.actor.profile()` (for pinning)
+  - `agent.login()` - returns promise
+  - `agent.post()` - returns promise with { uri: string }
+  - `agent.upsertProfile()` - accepts callback function, executes it
 - Use spies to verify method calls
 - Return controlled responses
 
@@ -278,20 +329,23 @@ Each module gets a corresponding test file:
 ```typescript
 vi.mock('@atproto/api', () => ({
   BskyAgent: vi.fn(() => ({
-    login: vi.fn(),
-    post: vi.fn(),
-    api: {
-      app: {
-        bsky: {
-          actor: {
-            profile: vi.fn()
-          }
-        }
-      }
-    }
+    login: vi.fn().mockResolvedValue({ success: true }),
+    post: vi.fn().mockResolvedValue({ uri: 'at://post/123' }),
+    upsertProfile: vi.fn((callback) => {
+      // Execute callback with mock existing profile
+      const existing = { displayName: 'Test', description: 'Bio' };
+      const updated = callback(existing);
+      return Promise.resolve(updated);
+    })
   }))
 }));
 ```
+
+**Key assertions for pinning:**
+- Verify `upsertProfile` called with function
+- Verify callback adds `pinnedPost` property when pinning
+- Verify callback removes `pinnedPost` property when unpinning
+- Verify pin/unpin errors are caught and logged but don't throw
 
 **Key assertions:**
 - Verify method calls with correct parameters
@@ -364,20 +418,84 @@ export function createMockBskyAgent() {
   return {
     login: vi.fn().mockResolvedValue({ success: true }),
     post: vi.fn().mockResolvedValue({ uri: 'at://post/123' }),
-    api: {
-      app: {
-        bsky: {
-          actor: {
-            profile: vi.fn().mockResolvedValue({ success: true })
-          }
-        }
-      }
-    }
+    upsertProfile: vi.fn((callback) => {
+      const existing = { displayName: 'Test', description: 'Bio' };
+      const updated = callback(existing);
+      return Promise.resolve(updated);
+    })
   };
 }
+
+// Mock file system operations (use in beforeEach)
+export function setupFileSystemMocks(options: {
+  fileExists?: boolean;
+  fileContent?: string;
+  readError?: Error;
+  writeError?: Error;
+  renameError?: Error;
+} = {}) {
+  const {
+    fileExists = false,
+    fileContent = '{}',
+    readError,
+    writeError,
+    renameError
+  } = options;
+
+  // Note: Use vi.mocked() after importing mocked modules
+  // This helper returns mock implementations to use with vi.mocked()
+  return {
+    existsSync: vi.fn(() => fileExists),
+    readFile: vi.fn(() =>
+      readError ? Promise.reject(readError) : Promise.resolve(fileContent)
+    ),
+    writeFile: vi.fn(() =>
+      writeError ? Promise.reject(writeError) : Promise.resolve()
+    ),
+    mkdir: vi.fn().mockResolvedValue(undefined),
+    rename: vi.fn(() =>
+      renameError ? Promise.reject(renameError) : Promise.resolve()
+    )
+  };
+}
+
+// Example usage in test file:
+// vi.mock('fs');
+// vi.mock('fs/promises');
+//
+// import { existsSync } from 'fs';
+// import { readFile, writeFile, mkdir, rename } from 'fs/promises';
+//
+// beforeEach(() => {
+//   const mocks = setupFileSystemMocks({ fileExists: true, fileContent: '{"concerts":[]}' });
+//   vi.mocked(existsSync).mockImplementation(mocks.existsSync);
+//   vi.mocked(readFile).mockImplementation(mocks.readFile);
+//   vi.mocked(writeFile).mockImplementation(mocks.writeFile);
+//   vi.mocked(mkdir).mockImplementation(mocks.mkdir);
+//   vi.mocked(rename).mockImplementation(mocks.rename);
+// });
 ```
 
 ## Mocking Strategies
+
+**ESM Module Mocking:** All mocks must be defined at the top level of test files, before imports, using `vi.mock()`. This is required for ESM modules. After mocking, use `vi.mocked()` to access and configure the mocked functions.
+
+**Example pattern:**
+```typescript
+// Mock declarations at top of file (before imports)
+vi.mock('fs');
+vi.mock('fs/promises');
+
+// Then import modules
+import { existsSync } from 'fs';
+import { readFile } from 'fs/promises';
+
+// Configure mocks in test or beforeEach
+beforeEach(() => {
+  vi.mocked(existsSync).mockReturnValue(true);
+  vi.mocked(readFile).mockResolvedValue('{"concerts":[]}');
+});
+```
 
 ### Time and Date Mocking
 
@@ -494,17 +612,19 @@ Each test:
 
 ## TypeScript Configuration
 
-Update `tsconfig.json` to exclude test files from build:
+Update `tsconfig.json` to exclude test files from build.
 
+**Current exclude array:**
 ```json
-{
-  "compilerOptions": {
-    // ... existing options
-  },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "src/**/*.test.ts", "src/__tests__"]
-}
+"exclude": ["node_modules", "dist"]
 ```
+
+**Updated exclude array (add test patterns):**
+```json
+"exclude": ["node_modules", "dist", "src/**/*.test.ts", "src/__tests__"]
+```
+
+This ensures test files are not compiled to the `dist/` directory when running `npm run build`.
 
 ## Error Testing
 
@@ -512,9 +632,11 @@ Each module includes error case testing:
 
 - **concertGenerator:** Invalid date ranges, max attempts exceeded
 - **scheduler:** Null/undefined state values, missing dates
-- **venues:** Empty venue list (if applicable)
-- **storage:** File not found, corrupted JSON, write failures
+- **venues:** File not found, invalid JSON, empty array, missing required fields
+- **storage:** File not found, corrupted JSON, write failures, backup failures
 - **blueskyClient:** Network errors, authentication failures, API errors
+
+**Note on logging:** The implementation includes extensive console.log calls for monitoring. These are NOT tested as they are considered infrastructure/debugging code. Tests focus on functional behavior and return values, not logging output.
 
 Example:
 
@@ -530,9 +652,12 @@ test('handles file not found error', async () => {
 
 - No actual network calls (all mocked)
 - No actual file I/O (all mocked)
-- Fast execution: entire suite should run in < 1 second
+- Fast execution target: entire suite should run in < 5 seconds on typical development machines
+- Initial implementation target: < 2 seconds for basic test suite
 - Parallel execution enabled by default in Vitest
 - Use `vitest run` for CI/CD (exits after running)
+
+**Note:** As test suite grows, execution time may increase. The < 5 second target is for the initial comprehensive suite described in this spec.
 
 ## CI/CD Integration
 
@@ -569,12 +694,13 @@ The `npm test` command runs `vitest run`, which:
 ## Success Criteria
 
 - All modules have comprehensive unit tests
-- Tests run in < 1 second total
+- Tests run in < 5 seconds total (initial suite)
 - All tests pass
-- No external dependencies during test execution
+- No external dependencies during test execution (network, filesystem)
 - TypeScript compilation excludes test files
 - Three npm commands work: `test`, `test:watch`, `test:ui`
 - Tests are maintainable and well-organized
+- All critical functionality covered (concert generation, scheduling, storage, API client)
 
 ## Future Enhancements (Out of Scope)
 
