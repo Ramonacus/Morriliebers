@@ -1,4 +1,4 @@
-import { readFile, writeFile, mkdir } from 'fs/promises';
+import { readFile, writeFile, mkdir, rename } from 'fs/promises';
 import { existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -103,7 +103,7 @@ export async function saveState(state: State): Promise<void> {
     // Atomic write: write to temp file, then rename
     const tempFile = `${STATE_FILE}.tmp`;
     await writeFile(tempFile, json, 'utf-8');
-    await writeFile(STATE_FILE, json, 'utf-8'); // Node.js doesn't have atomic rename cross-platform, so we just overwrite
+    await rename(tempFile, STATE_FILE); // Atomic on POSIX systems
 
     console.log('[Storage] State saved successfully');
   } catch (error) {
