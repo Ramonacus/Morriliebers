@@ -10,9 +10,22 @@ const __dirname = dirname(__filename);
  * Load venues from config file
  */
 function loadVenues(): Venue[] {
-  const venuesPath = join(__dirname, '..', 'config', 'venues.json');
-  const data = readFileSync(venuesPath, 'utf-8');
-  return JSON.parse(data) as Venue[];
+  try {
+    const venuesPath = join(__dirname, '..', 'config', 'venues.json');
+    const data = readFileSync(venuesPath, 'utf-8');
+    const parsed = JSON.parse(data);
+
+    // Validate it's a non-empty array
+    if (!Array.isArray(parsed) || parsed.length === 0) {
+      throw new Error('venues.json must contain a non-empty array');
+    }
+
+    return parsed as Venue[];
+  } catch (error) {
+    throw new Error(
+      `Failed to load venues from config/venues.json: ${error instanceof Error ? error.message : String(error)}`
+    );
+  }
 }
 
 /**
@@ -24,6 +37,9 @@ export const venues: Venue[] = loadVenues();
  * Select a random venue from the list
  */
 export function getRandomVenue(): Venue {
+  if (venues.length === 0) {
+    throw new Error('No venues available');
+  }
   const randomIndex = Math.floor(Math.random() * venues.length);
   return venues[randomIndex];
 }
