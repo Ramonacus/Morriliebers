@@ -330,10 +330,8 @@ pm2 save
 ## Future Enhancements
 
 Potential improvements (not in scope for initial version):
+- Multiple cancellation message templates
 - Vary cancellation message formats/excuses
 - Add images to posts (concert posters)
-- Analytics tracking (post engagement)
-- Web dashboard for monitoring
 - Manual override commands
-- Multiple cancellation message templates
 - Database instead of JSON (if scaling needed)
