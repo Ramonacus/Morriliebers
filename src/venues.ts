@@ -20,6 +20,17 @@ function loadVenues(): Venue[] {
       throw new Error('venues.json must contain a non-empty array');
     }
 
+    // Validate each venue has required properties
+    for (let i = 0; i < parsed.length; i++) {
+      const venue = parsed[i];
+      if (!venue.name || typeof venue.name !== 'string') {
+        throw new Error(`Venue at index ${i} missing or invalid 'name' property`);
+      }
+      if (!venue.city || typeof venue.city !== 'string') {
+        throw new Error(`Venue at index ${i} missing or invalid 'city' property`);
+      }
+    }
+
     return parsed as Venue[];
   } catch (error) {
     throw new Error(
