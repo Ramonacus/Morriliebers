@@ -1,0 +1,28 @@
+{
+  "name": "morriliebers-bot",
+  "version": "1.0.0",
+  "description": "Automated Bluesky bot for Morriliebers concert announcements",
+  "main": "dist/index.js",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "test": "echo \"Error: no test command yet\" && exit 0"
+  },
+  "keywords": ["bluesky", "bot", "morrissey"],
+  "author": "Ramon Ferrer <ramonacus@gmail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "@atproto/api": "^0.12.0",
+    "dotenv": "^16.4.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
