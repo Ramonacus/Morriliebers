@@ -1,0 +1,54 @@
+[
+  {
+    "name": "Sala Apolo",
+    "city": "Barcelona"
+  },
+  {
+    "name": "Razzmatazz",
+    "city": "Barcelona"
+  },
+  {
+    "name": "Sala BARTS",
+    "city": "Barcelona"
+  },
+  {
+    "name": "Joy Eslava",
+    "city": "Madrid"
+  },
+  {
+    "name": "Sala Riviera",
+    "city": "Madrid"
+  },
+  {
+    "name": "WiZink Center",
+    "city": "Madrid"
+  },
+  {
+    "name": "La Riviera",
+    "city": "Madrid"
+  },
+  {
+    "name": "Sala But",
+    "city": "Madrid"
+  },
+  {
+    "name": "Café Berlín",
+    "city": "Madrid"
+  },
+  {
+    "name": "Loco Club",
+    "city": "Valencia"
+  },
+  {
+    "name": "Sala Moon",
+    "city": "Valencia"
+  },
+  {
+    "name": "Sala Custom",
+    "city": "Sevilla"
+  },
+  {
+    "name": "Sala López",
+    "city": "Zaragoza"
+  }
+]
