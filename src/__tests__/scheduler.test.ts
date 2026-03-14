@@ -53,4 +53,24 @@ describe('shouldPostWeeklyAnnouncement', () => {
 
     expect(result).toBe(false);
   });
+
+  it('returns false on Tuesday at 12:00', () => {
+    // Tuesday, March 10, 2026 at 12:00
+    setMockTime(new Date('2026-03-10T12:00:00'));
+
+    const state = createMockState();
+    const result = shouldPostWeeklyAnnouncement(state);
+
+    expect(result).toBe(false);
+  });
+
+  it('returns false on Sunday at 12:00', () => {
+    // Sunday, March 15, 2026 at 12:00
+    setMockTime(new Date('2026-03-15T12:00:00'));
+
+    const state = createMockState();
+    const result = shouldPostWeeklyAnnouncement(state);
+
+    expect(result).toBe(false);
+  });
 });
