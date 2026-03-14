@@ -70,3 +70,20 @@ describe('venues data validation', () => {
     });
   });
 });
+
+/**
+ * Note on loadVenues() error testing:
+ *
+ * loadVenues() is called at module initialization (when venues.ts is imported),
+ * so we cannot easily test file system errors (file not found, invalid JSON, etc.)
+ * in this test file without complex module cache manipulation.
+ *
+ * The validation logic (non-empty array, required fields) is already covered
+ * by the 'venues data validation' tests above, which verify the loaded data
+ * meets requirements.
+ *
+ * File system error handling would be caught in:
+ * - Manual testing during development
+ * - Integration tests with actual file system
+ * - Production deployment (fails fast with clear error message)
+ */
