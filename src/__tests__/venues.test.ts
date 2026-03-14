@@ -42,3 +42,31 @@ describe('getRandomVenue', () => {
     expect(venue).toEqual(venues[expectedIndex]);
   });
 });
+
+describe('venues data validation', () => {
+  it('venues array is non-empty', () => {
+    expect(venues.length).toBeGreaterThan(0);
+  });
+
+  it('all venues have required name property', () => {
+    venues.forEach((venue, index) => {
+      expect(venue.name, `Venue at index ${index} missing name`).toBeTruthy();
+      expect(typeof venue.name, `Venue at index ${index} name not string`).toBe('string');
+    });
+  });
+
+  it('all venues have required city property', () => {
+    venues.forEach((venue, index) => {
+      expect(venue.city, `Venue at index ${index} missing city`).toBeTruthy();
+      expect(typeof venue.city, `Venue at index ${index} city not string`).toBe('string');
+    });
+  });
+
+  it('optional capacity field is string if present', () => {
+    venues.forEach((venue, index) => {
+      if ('capacity' in venue && venue.capacity !== undefined) {
+        expect(typeof venue.capacity, `Venue at index ${index} capacity not string`).toBe('string');
+      }
+    });
+  });
+});
