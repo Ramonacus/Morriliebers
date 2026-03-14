@@ -1,5 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { shouldPostWeeklyAnnouncement, getConcertsToCancelNow } from '../scheduler.js';
+import {
+  shouldPostWeeklyAnnouncement,
+  getConcertsToCancelNow,
+  hasRemainingConcertsInWeek
+} from '../scheduler.js';
 import { createMockState, createMockConcert } from './fixtures.js';
 import { setMockTime, resetMockTime } from './helpers.js';
 
@@ -181,5 +185,67 @@ describe('getConcertsToCancelNow', () => {
     const result = getConcertsToCancelNow(concerts);
 
     expect(result).toHaveLength(0);
+  });
+});
+
+describe('hasRemainingConcertsInWeek', () => {
+  it('returns true when uncanceled concerts remain in same week', () => {
+    const canceledConcert = createMockConcert({
+      date: new Date('2026-03-12T20:00:00'), // Wednesday
+      isCanceled: true
+    });
+
+    const allConcerts = [
+      canceledConcert,
+      createMockConcert({
+        id: '2',
+        date: new Date('2026-03-14T20:00:00'), // Friday, same week
+        isCanceled: false
+      })
+    ];
+
+    const result = hasRemainingConcertsInWeek(canceledConcert, allConcerts);
+
+    expect(result).toBe(true);
+  });
+
+  it('returns false when all concerts in week are canceled', () => {
+    const canceledConcert = createMockConcert({
+      date: new Date('2026-03-12T20:00:00'), // Wednesday
+      isCanceled: true
+    });
+
+    const allConcerts = [
+      canceledConcert,
+      createMockConcert({
+        id: '2',
+        date: new Date('2026-03-14T20:00:00'), // Friday, same week
+        isCanceled: true // Also canceled
+      })
+    ];
+
+    const result = hasRemainingConcertsInWeek(canceledConcert, allConcerts);
+
+    expect(result).toBe(false);
+  });
+
+  it('correctly identifies week boundaries', () => {
+    const canceledConcert = createMockConcert({
+      date: new Date('2026-03-15T20:00:00'), // Sunday
+      isCanceled: true
+    });
+
+    const allConcerts = [
+      canceledConcert,
+      createMockConcert({
+        id: '2',
+        date: new Date('2026-03-16T20:00:00'), // Monday (next week)
+        isCanceled: false
+      })
+    ];
+
+    const result = hasRemainingConcertsInWeek(canceledConcert, allConcerts);
+
+    expect(result).toBe(false);
   });
 });
