@@ -17,4 +17,40 @@ describe('shouldPostWeeklyAnnouncement', () => {
 
     expect(result).toBe(true);
   });
+
+  it('returns true on Monday at 10:00 (start of window)', () => {
+    setMockTime(new Date('2026-03-09T10:00:00'));
+
+    const state = createMockState();
+    const result = shouldPostWeeklyAnnouncement(state);
+
+    expect(result).toBe(true);
+  });
+
+  it('returns true on Monday at 13:59 (end of window)', () => {
+    setMockTime(new Date('2026-03-09T13:59:00'));
+
+    const state = createMockState();
+    const result = shouldPostWeeklyAnnouncement(state);
+
+    expect(result).toBe(true);
+  });
+
+  it('returns false on Monday at 09:59 (before window)', () => {
+    setMockTime(new Date('2026-03-09T09:59:00'));
+
+    const state = createMockState();
+    const result = shouldPostWeeklyAnnouncement(state);
+
+    expect(result).toBe(false);
+  });
+
+  it('returns false on Monday at 14:00 (after window)', () => {
+    setMockTime(new Date('2026-03-09T14:00:00'));
+
+    const state = createMockState();
+    const result = shouldPostWeeklyAnnouncement(state);
+
+    expect(result).toBe(false);
+  });
 });
