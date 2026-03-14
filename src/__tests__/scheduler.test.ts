@@ -73,4 +73,39 @@ describe('shouldPostWeeklyAnnouncement', () => {
 
     expect(result).toBe(false);
   });
+
+  it('returns false if already announced this week', () => {
+    // Monday, March 9, 2026 at 12:00
+    setMockTime(new Date('2026-03-09T12:00:00'));
+
+    const state = createMockState({
+      lastAnnouncementDate: new Date('2026-03-09T11:00:00') // Earlier today
+    });
+    const result = shouldPostWeeklyAnnouncement(state);
+
+    expect(result).toBe(false);
+  });
+
+  it('returns true if announced last week', () => {
+    // Monday, March 9, 2026 at 12:00
+    setMockTime(new Date('2026-03-09T12:00:00'));
+
+    const state = createMockState({
+      lastAnnouncementDate: new Date('2026-03-02T12:00:00') // Last Monday
+    });
+    const result = shouldPostWeeklyAnnouncement(state);
+
+    expect(result).toBe(true);
+  });
+
+  it('returns true with undefined lastAnnouncementDate', () => {
+    setMockTime(new Date('2026-03-09T12:00:00'));
+
+    const state = createMockState({
+      lastAnnouncementDate: undefined
+    });
+    const result = shouldPostWeeklyAnnouncement(state);
+
+    expect(result).toBe(true);
+  });
 });
