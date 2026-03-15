@@ -96,6 +96,38 @@ pm2 startup
 
 Edit `config/venues.json` to modify the venue list.
 
+## Testing
+
+The project includes comprehensive unit tests using Vitest:
+
+```bash
+# Run all tests
+npm test
+
+# Run tests in watch mode
+npm run test:watch
+
+# Run tests with UI
+npm run test:ui
+```
+
+### Test Coverage
+
+- **Scheduler** (17 tests): `shouldPostWeeklyAnnouncement`, `getConcertsToCancelNow`, `hasRemainingConcertsInWeek`
+- **Venues** (8 tests): Random venue selection, data validation
+- **Concert Generator** (11 tests): Generation logic, time/day constraints, concert properties
+- **Storage** (12 tests): State serialization, `loadState`, `saveState`, error handling
+- **Bluesky Client** (8 tests): Authentication, post creation, pin/unpin functionality
+
+**Total: 56 tests** covering all core modules with mocked dependencies.
+
+### Test Architecture
+
+- **Mocked dependencies**: File system, time, randomness, Bluesky API
+- **Test fixtures**: Shared mock data and factory functions in `src/__tests__/fixtures.ts`
+- **Test helpers**: Utility functions for mocking in `src/__tests__/helpers.ts`
+- **Isolated tests**: No network calls, no file system writes, deterministic results
+
 ## Project Structure
 
 ```
