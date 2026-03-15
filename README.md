@@ -69,6 +69,21 @@ pm2 save
 pm2 startup
 ```
 
+## Manual Commands
+
+For testing or manual control, you can trigger announcements and cancellations directly:
+
+```bash
+# Generate and announce weekly concerts
+# (bypasses Monday 10-14h restriction)
+npm run trigger:announce
+
+# Cancel the next chronologically upcoming concert
+npm run trigger:cancel-next
+```
+
+**Important:** Stop the bot (`pm2 stop morriliebers-bot`) before running manual commands to prevent state conflicts.
+
 ## How It Works
 
 1. **Every 42 minutes**, the bot checks:
@@ -118,8 +133,11 @@ npm run test:ui
 - **Concert Generator** (11 tests): Generation logic, time/day constraints, concert properties
 - **Storage** (12 tests): State serialization, `loadState`, `saveState`, error handling
 - **Bluesky Client** (8 tests): Authentication, post creation, pin/unpin functionality
+- **Script Utilities** (9 tests): Authentication, state loading, exit handling
+- **Announce Script** (4 tests): Concert generation, posting, pinning, error handling
+- **Cancel-Next Script** (6 tests): Concert selection, cancellation, unpinning logic
 
-**Total: 56 tests** covering all core modules with mocked dependencies.
+**Total: 75 tests** covering all core modules with mocked dependencies.
 
 ### Test Architecture
 
@@ -139,7 +157,11 @@ morriliebers-bot/
 │   ├── storage.ts            # State persistence
 │   ├── concertGenerator.ts   # Concert generation
 │   ├── blueskyClient.ts      # Bluesky API wrapper
-│   └── scheduler.ts          # Scheduling logic
+│   ├── scheduler.ts          # Scheduling logic
+│   └── scripts/              # Manual trigger scripts
+│       ├── utils.ts          # Shared script utilities
+│       ├── announce.ts       # Manual announcement trigger
+│       └── cancel-next.ts    # Manual cancellation trigger
 ├── config/
 │   └── venues.json           # Venue list
 ├── data/
