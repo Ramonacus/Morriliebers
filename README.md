@@ -14,6 +14,14 @@ Automated Bluesky bot for Morriliebers (Morrissey tribute band) that announces w
 
 - Node.js 18+
 - Bluesky account with app password
+- (Optional) Google Gemini API key for AI-generated cancellation excuses
+
+## Dependencies
+
+The project uses:
+- `ai` - Vercel AI SDK
+- `@ai-sdk/google` - Google Gemini integration
+- `@atproto/api` - Bluesky API client
 
 ## Setup
 
@@ -34,6 +42,27 @@ Automated Bluesky bot for Morriliebers (Morrissey tribute band) that announces w
    - Go to Settings > App Passwords in Bluesky
    - Create a new app password
    - Add it to `.env`
+
+## Environment Variables
+
+### Bluesky Authentication
+
+```bash
+BLUESKY_IDENTIFIER=your-handle.bsky.social
+BLUESKY_PASSWORD=your-app-password
+```
+
+### Google Gemini AI
+
+The bot uses Google Gemini to generate creative cancellation excuses.
+
+Get an API key from [Google AI Studio](https://aistudio.google.com/app/apikey).
+
+```bash
+GOOGLE_GENERATIVE_AI_API_KEY=your-gemini-api-key
+```
+
+The bot will fall back to a static message if the API key is not configured or if the Gemini API is unavailable.
 
 ## Development
 
