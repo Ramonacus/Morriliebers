@@ -72,6 +72,12 @@ function getFallbackMessage(concert: Concert): string {
 export async function generateExcuse(concert: Concert): Promise<string> {
   console.log(`[ExcuseGenerator] Generating excuse for concert at ${concert.venue.name}`);
 
+  // Check if API key is available
+  if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
+    console.warn('[ExcuseGenerator] GOOGLE_GENERATIVE_AI_API_KEY not set, using fallback');
+    return getFallbackMessage(concert);
+  }
+
   try {
     // Attempt 1
     try {

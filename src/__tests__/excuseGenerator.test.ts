@@ -22,6 +22,8 @@ describe('ExcuseGenerator', () => {
       venue: { name: 'Sala But', city: 'Madrid' },
       date: new Date('2026-03-20T20:00:00'),
     });
+    // Set API key for tests that need it (will be removed in specific test)
+    process.env.GOOGLE_GENERATIVE_AI_API_KEY = 'test-api-key';
   });
 
   afterEach(() => {
@@ -121,5 +123,23 @@ describe('ExcuseGenerator', () => {
     expect(callArgs.prompt).toContain('Sala But');
     expect(callArgs.prompt).toContain('Madrid');
     expect(callArgs.prompt).toContain('03/20');
+  });
+
+  it('uses fallback when API key is missing', async () => {
+    // Temporarily remove API key
+    const originalKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY;
+    delete process.env.GOOGLE_GENERATIVE_AI_API_KEY;
+
+    const result = await generateExcuse(mockConcert);
+
+    // Should use fallback message
+    expect(result).toContain('Morriliebers');
+    expect(result).toContain('Sala But');
+    expect(result).toMatch(/\d{2}\/\d{2}/);
+
+    // Restore API key
+    if (originalKey) {
+      process.env.GOOGLE_GENERATIVE_AI_API_KEY = originalKey;
+    }
   });
 });
