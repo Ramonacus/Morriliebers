@@ -78,4 +78,30 @@ describe('ExcuseGenerator', () => {
 
     vi.useRealTimers();
   });
+
+  it('uses fallback message when both attempts fail', async () => {
+    vi.useFakeTimers();
+
+    const { generateText } = await import('ai');
+
+    // Both attempts fail
+    vi.mocked(generateText)
+      .mockRejectedValueOnce(new Error('Network timeout'))
+      .mockRejectedValueOnce(new Error('Network timeout'));
+
+    const promise = generateExcuse(mockConcert);
+
+    // Fast-forward time by 1 minute (for retry)
+    await vi.advanceTimersByTimeAsync(60000);
+
+    const result = await promise;
+
+    // Should return fallback message with venue and date
+    expect(result).toContain('Morriliebers');
+    expect(result).toContain('Sala But');
+    expect(result).toMatch(/\d{2}\/\d{2}/); // Date format MM/DD
+    expect(generateText).toHaveBeenCalledTimes(2);
+
+    vi.useRealTimers();
+  });
 });

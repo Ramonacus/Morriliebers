@@ -56,21 +56,37 @@ async function generateWithGemini(concert: Concert, attempt: number): Promise<st
 }
 
 /**
+ * Generate fallback message when AI generation fails
+ */
+function getFallbackMessage(concert: Concert): string {
+  const dateStr = concert.date.toLocaleDateString('en-US', {
+    day: '2-digit',
+    month: '2-digit',
+  });
+  return `Morriliebers regrets to announce the cancellation of the concert at ${concert.venue.name} on ${dateStr}`;
+}
+
+/**
  * Generate AI excuse for concert cancellation with retry logic
  */
 export async function generateExcuse(concert: Concert): Promise<string> {
   console.log(`[ExcuseGenerator] Generating excuse for concert at ${concert.venue.name}`);
 
-  // Attempt 1
   try {
-    return await generateWithGemini(concert, 1);
+    // Attempt 1
+    try {
+      return await generateWithGemini(concert, 1);
+    } catch (error) {
+      console.log('[ExcuseGenerator] Retrying in 1 minute...');
+
+      // Wait 1 minute before retry
+      await new Promise(resolve => setTimeout(resolve, 60000));
+
+      // Attempt 2
+      return await generateWithGemini(concert, 2);
+    }
   } catch (error) {
-    console.log('[ExcuseGenerator] Retrying in 1 minute...');
-
-    // Wait 1 minute before retry
-    await new Promise(resolve => setTimeout(resolve, 60000));
-
-    // Attempt 2
-    return await generateWithGemini(concert, 2);
+    console.warn('[ExcuseGenerator] Both attempts failed, using fallback message');
+    return getFallbackMessage(concert);
   }
 }
