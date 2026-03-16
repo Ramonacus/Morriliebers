@@ -24,7 +24,8 @@ export class BlueskyClient {
       });
       console.log('[Bluesky] Authentication successful');
     } catch (error) {
-      console.error('[Bluesky] Authentication failed:', error);
+      console.error('[Bluesky] Authentication failed:');
+      console.error(error);
       throw new Error('Failed to authenticate with Bluesky');
     }
   }
@@ -33,12 +34,21 @@ export class BlueskyClient {
    * Format concert for announcement
    */
   private formatConcertLine(concert: Concert): string {
-    const dayName = concert.date.toLocaleDateString('es-ES', { weekday: 'long' });
+    const dayName = concert.date.toLocaleDateString('en-US', {
+      weekday: 'long',
+    });
     const dayCapitalized = dayName.charAt(0).toUpperCase() + dayName.slice(1);
-    const dateStr = concert.date.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' });
-    const timeStr = concert.date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', hour12: false });
+    const dateStr = concert.date.toLocaleDateString('en-US', {
+      day: '2-digit',
+      month: '2-digit',
+    });
+    const timeStr = concert.date.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    });
 
-    return `• ${dayCapitalized} ${dateStr} a las ${timeStr} - ${concert.venue.name}, ${concert.venue.city}`;
+    return `• ${dayCapitalized} ${dateStr} at ${timeStr} - ${concert.venue.name}, ${concert.venue.city}`;
   }
 
   /**
@@ -49,8 +59,10 @@ export class BlueskyClient {
     try {
       console.log('[Bluesky] Posting weekly announcement...');
 
-      const concertLines = concerts.map(c => this.formatConcertLine(c)).join('\n');
-      const text = `Próximos conciertos de Morriliebers:\n\n${concertLines}`;
+      const concertLines = concerts
+        .map((c) => this.formatConcertLine(c))
+        .join('\n');
+      const text = `Upcoming Morriliebers concerts:\n\n${concertLines}`;
 
       const response = await this.agent.post({
         text,
