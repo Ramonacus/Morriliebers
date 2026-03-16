@@ -28,5 +28,26 @@ describe('ExcuseGenerator', () => {
     vi.restoreAllMocks();
   });
 
-  // Tests will go here
+  it('generates excuse successfully on first attempt', async () => {
+    const mockExcuse = 'The oppressive weight of Madrid has rendered performance impossible.';
+
+    const { generateText } = await import('ai');
+    vi.mocked(generateText).mockResolvedValue({
+      text: mockExcuse,
+      finishReason: 'stop',
+      usage: { promptTokens: 50, completionTokens: 20, totalTokens: 70 },
+    } as any);
+
+    const result = await generateExcuse(mockConcert);
+
+    expect(result).toBe(mockExcuse);
+    expect(generateText).toHaveBeenCalledTimes(1);
+    expect(generateText).toHaveBeenCalledWith(
+      expect.objectContaining({
+        model: expect.objectContaining({ model: 'gemini-2.0-flash-exp' }),
+        temperature: 1.0,
+        maxTokens: 100,
+      })
+    );
+  });
 });
