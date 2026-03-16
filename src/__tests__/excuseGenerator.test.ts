@@ -104,4 +104,22 @@ describe('ExcuseGenerator', () => {
 
     vi.useRealTimers();
   });
+
+  it('includes venue, city, and date in prompt', async () => {
+    const mockExcuse = 'Test excuse';
+
+    const { generateText } = await import('ai');
+    vi.mocked(generateText).mockResolvedValue({
+      text: mockExcuse,
+      finishReason: 'stop',
+      usage: { promptTokens: 50, completionTokens: 20, totalTokens: 70 },
+    } as any);
+
+    await generateExcuse(mockConcert);
+
+    const callArgs = vi.mocked(generateText).mock.calls[0][0];
+    expect(callArgs.prompt).toContain('Sala But');
+    expect(callArgs.prompt).toContain('Madrid');
+    expect(callArgs.prompt).toContain('03/20');
+  });
 });
