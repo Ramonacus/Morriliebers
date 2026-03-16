@@ -47,9 +47,10 @@ describe('Cancel Next Script', () => {
   });
 
   it('exits gracefully when all concerts are already canceled', async () => {
+    const futureDate = new Date(Date.now() + 4 * 24 * 60 * 60 * 1000); // 4 days from now
     const concert = createMockConcert({
       isCanceled: true,
-      date: new Date('2026-03-20T20:00:00')
+      date: futureDate
     });
     const mockState = createMockState({ concerts: [concert] });
 
@@ -71,17 +72,17 @@ describe('Cancel Next Script', () => {
   it('cancels the next chronologically upcoming concert', async () => {
     const concert1 = createMockConcert({
       id: 'concert-1',
-      date: new Date('2026-03-25T20:00:00'),
+      date: new Date(Date.now() + 9 * 24 * 60 * 60 * 1000), // 9 days from now
       isCanceled: false
     });
     const concert2 = createMockConcert({
       id: 'concert-2',
-      date: new Date('2026-03-20T20:00:00'),
+      date: new Date(Date.now() + 4 * 24 * 60 * 60 * 1000), // 4 days from now (earliest)
       isCanceled: false
     });
     const concert3 = createMockConcert({
       id: 'concert-3',
-      date: new Date('2026-03-22T20:00:00'),
+      date: new Date(Date.now() + 6 * 24 * 60 * 60 * 1000), // 6 days from now
       isCanceled: false
     });
     const mockState = createMockState({ concerts: [concert1, concert2, concert3] });
@@ -110,8 +111,9 @@ describe('Cancel Next Script', () => {
   });
 
   it('unpins announcement when no concerts remain in the week', async () => {
+    const futureDate = new Date(Date.now() + 4 * 24 * 60 * 60 * 1000); // 4 days from now
     const concert = createMockConcert({
-      date: new Date('2026-03-20T20:00:00'),
+      date: futureDate,
       isCanceled: false,
       isPinned: true
     });
@@ -139,7 +141,11 @@ describe('Cancel Next Script', () => {
   });
 
   it('handles cancellation post failure', async () => {
-    const concert = createMockConcert({ isCanceled: false });
+    const futureDate = new Date(Date.now() + 4 * 24 * 60 * 60 * 1000); // 4 days from now
+    const concert = createMockConcert({
+      isCanceled: false,
+      date: futureDate
+    });
     const mockState = createMockState({ concerts: [concert] });
 
     vi.mocked(loadAndValidateState).mockResolvedValue(mockState);
@@ -156,7 +162,11 @@ describe('Cancel Next Script', () => {
   });
 
   it('handles unpin failure gracefully', async () => {
-    const concert = createMockConcert({ isCanceled: false });
+    const futureDate = new Date(Date.now() + 4 * 24 * 60 * 60 * 1000); // 4 days from now
+    const concert = createMockConcert({
+      isCanceled: false,
+      date: futureDate
+    });
     const mockState = createMockState({ concerts: [concert] });
 
     vi.mocked(loadAndValidateState).mockResolvedValue(mockState);

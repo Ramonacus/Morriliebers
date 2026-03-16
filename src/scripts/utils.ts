@@ -10,7 +10,9 @@ export async function initializeClient(): Promise<BlueskyClient> {
   const password = process.env.BLUESKY_APP_PASSWORD;
 
   if (!identifier || !password) {
-    console.error('[Scripts] Error: BLUESKY_IDENTIFIER and BLUESKY_APP_PASSWORD must be set');
+    console.error(
+      '[Scripts] Error: BLUESKY_IDENTIFIER and BLUESKY_APP_PASSWORD must be set',
+    );
     process.exit(1);
   }
 
@@ -30,7 +32,9 @@ export async function initializeClient(): Promise<BlueskyClient> {
 export async function loadAndValidateState(): Promise<State> {
   try {
     const state = await loadState();
-    console.log(`[Scripts] Loaded state with ${state.concerts.length} concerts`);
+    console.log(
+      `[Scripts] Loaded state with ${state.concerts.length} concerts`,
+    );
     return state;
   } catch (error) {
     console.error('[Scripts] Failed to load state');
@@ -41,7 +45,10 @@ export async function loadAndValidateState(): Promise<State> {
 /**
  * Save state and exit with status code
  */
-export async function saveAndExit(state: State, exitCode: number): Promise<never> {
+export async function saveAndExit(
+  state: State,
+  exitCode: number,
+): Promise<never> {
   try {
     await saveState(state);
     console.log('[Scripts] State saved successfully');

@@ -30,7 +30,7 @@ export async function runCancelNext(): Promise<void> {
 
     if (!nextConcert) {
       console.log('[CancelNext] No upcoming concerts to cancel');
-      await saveAndExit(state, 0);
+      return await saveAndExit(state, 0);
     }
 
     console.log(`[CancelNext] Canceling concert at ${nextConcert.venue.name}, ${nextConcert.venue.city}`);
