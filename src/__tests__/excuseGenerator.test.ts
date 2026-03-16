@@ -142,4 +142,26 @@ describe('ExcuseGenerator', () => {
       process.env.GOOGLE_GENERATIVE_AI_API_KEY = originalKey;
     }
   });
+
+  it('uses correct Gemini model configuration', async () => {
+    const mockExcuse = 'Test excuse';
+    const { generateText } = await import('ai');
+    const { google } = await import('@ai-sdk/google');
+
+    vi.mocked(generateText).mockResolvedValue({
+      text: mockExcuse,
+      finishReason: 'stop',
+      usage: { promptTokens: 50, completionTokens: 20, totalTokens: 70 },
+    } as any);
+
+    await generateExcuse(mockConcert);
+
+    // Verify model configuration
+    const callArgs = vi.mocked(generateText).mock.calls[0][0];
+    expect(callArgs.model).toEqual(expect.objectContaining({
+      model: 'gemini-2.0-flash-exp'
+    }));
+    expect(callArgs.temperature).toBe(1.0);
+    expect(callArgs.maxTokens).toBe(100);
+  });
 });
