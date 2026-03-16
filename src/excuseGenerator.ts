@@ -34,19 +34,43 @@ Generate a creative cancellation message now:`;
 }
 
 /**
- * Generate AI excuse for concert cancellation
+ * Call Gemini API to generate excuse
+ */
+async function generateWithGemini(concert: Concert, attempt: number): Promise<string> {
+  try {
+    console.log(`[ExcuseGenerator] Attempt ${attempt}: Calling Gemini API`);
+
+    const result = await generateText({
+      model: google('gemini-2.0-flash-exp'),
+      prompt: buildPrompt(concert),
+      temperature: 1.0,
+      maxTokens: 100,
+    });
+
+    console.log(`[ExcuseGenerator] Attempt ${attempt} succeeded: ${result.text.substring(0, 50)}...`);
+    return result.text;
+  } catch (error) {
+    console.error(`[ExcuseGenerator] Attempt ${attempt} failed:`, error);
+    throw error;
+  }
+}
+
+/**
+ * Generate AI excuse for concert cancellation with retry logic
  */
 export async function generateExcuse(concert: Concert): Promise<string> {
   console.log(`[ExcuseGenerator] Generating excuse for concert at ${concert.venue.name}`);
 
-  const result = await generateText({
-    model: google('gemini-2.0-flash-exp'),
-    prompt: buildPrompt(concert),
-    temperature: 1.0,
-    maxTokens: 100,
-  });
+  // Attempt 1
+  try {
+    return await generateWithGemini(concert, 1);
+  } catch (error) {
+    console.log('[ExcuseGenerator] Retrying in 1 minute...');
 
-  console.log(`[ExcuseGenerator] Generated: ${result.text.substring(0, 50)}...`);
+    // Wait 1 minute before retry
+    await new Promise(resolve => setTimeout(resolve, 60000));
 
-  return result.text;
+    // Attempt 2
+    return await generateWithGemini(concert, 2);
+  }
 }

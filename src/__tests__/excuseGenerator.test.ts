@@ -50,4 +50,32 @@ describe('ExcuseGenerator', () => {
       })
     );
   });
+
+  it('retries once after first attempt fails', async () => {
+    vi.useFakeTimers();
+
+    const mockExcuse = 'Vocal strain necessitates rest.';
+    const { generateText } = await import('ai');
+
+    // First call fails, second succeeds
+    vi.mocked(generateText)
+      .mockRejectedValueOnce(new Error('API timeout'))
+      .mockResolvedValueOnce({
+        text: mockExcuse,
+        finishReason: 'stop',
+        usage: { promptTokens: 50, completionTokens: 20, totalTokens: 70 },
+      } as any);
+
+    const promise = generateExcuse(mockConcert);
+
+    // Fast-forward time by 1 minute
+    await vi.advanceTimersByTimeAsync(60000);
+
+    const result = await promise;
+
+    expect(result).toBe(mockExcuse);
+    expect(generateText).toHaveBeenCalledTimes(2);
+
+    vi.useRealTimers();
+  });
 });
