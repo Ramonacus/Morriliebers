@@ -44,7 +44,6 @@ async function generateWithGemini(concert: Concert, attempt: number): Promise<st
       model: google('gemini-2.0-flash-exp'),
       prompt: buildPrompt(concert),
       temperature: 1.0,
-      maxTokens: 100,
     });
 
     console.log(`[ExcuseGenerator] Attempt ${attempt} succeeded: ${result.text.substring(0, 50)}...`);

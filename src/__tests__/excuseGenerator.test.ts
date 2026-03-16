@@ -48,7 +48,6 @@ describe('ExcuseGenerator', () => {
       expect.objectContaining({
         model: expect.objectContaining({ model: 'gemini-2.0-flash-exp' }),
         temperature: 1.0,
-        maxTokens: 100,
       })
     );
   });
@@ -162,6 +161,5 @@ describe('ExcuseGenerator', () => {
       model: 'gemini-2.0-flash-exp'
     }));
     expect(callArgs.temperature).toBe(1.0);
-    expect(callArgs.maxTokens).toBe(100);
   });
 });
