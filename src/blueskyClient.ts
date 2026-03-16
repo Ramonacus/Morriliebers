@@ -1,5 +1,6 @@
 import { BskyAgent } from '@atproto/api';
 import type { Concert } from './types.js';
+import { generateExcuse } from './excuseGenerator.js';
 
 export class BlueskyClient {
   private agent: BskyAgent;
@@ -85,8 +86,7 @@ export class BlueskyClient {
     try {
       console.log('[Bluesky] Posting cancellation...');
 
-      const dateStr = concert.date.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' });
-      const text = `Morriliebers lamenta anunciar la cancelación de su concierto en ${concert.venue.name} del día ${dateStr}`;
+      const text = await generateExcuse(concert);
 
       const response = await this.agent.post({
         text,

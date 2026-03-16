@@ -1,10 +1,16 @@
 // Mock @atproto/api at top level
 vi.mock('@atproto/api');
 
+// Mock excuse generator
+vi.mock('../excuseGenerator.js', () => ({
+  generateExcuse: vi.fn().mockResolvedValue('Mocked excuse message')
+}));
+
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { BskyAgent } from '@atproto/api';
 import { BlueskyClient } from '../blueskyClient.js';
 import { createMockConcert } from './fixtures.js';
+import { generateExcuse } from '../excuseGenerator.js';
 
 describe('BlueskyClient', () => {
   let mockAgent: any;
@@ -99,8 +105,9 @@ describe('BlueskyClient', () => {
       const result = await client.postCancellation(concert);
 
       expect(result).toBe('at://cancel/123');
+      expect(generateExcuse).toHaveBeenCalledWith(concert);
       expect(mockAgent.post).toHaveBeenCalledWith({
-        text: expect.stringContaining('Test Venue'),
+        text: 'Mocked excuse message',
         createdAt: expect.any(String)
       });
     });
