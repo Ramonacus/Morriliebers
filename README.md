@@ -4,11 +4,11 @@ Automated Bluesky bot for Morriliebers (Morrissey tribute band) that announces w
 
 ## Features
 
-- 📅 Generates 1-3 concerts per week for Spanish venues
+- 📅 Generates 1-3 concerts per week for global venues
 - 📢 Posts weekly announcement every Monday (10:00-14:00)
 - 📌 Pins announcements to profile
 - ❌ Cancels concerts 20-24 hours before showtime
-- 🇪🇸 All messages in Spanish
+- 🌍 Venues across North America, South America, Europe, and Asia
 
 ## Prerequisites
 
@@ -131,12 +131,11 @@ npm run trigger:cancel-next
 
 ## Venues
 
-13 venues across Spanish cities (500k+ population):
-- Madrid: 6 venues
-- Barcelona: 3 venues
-- Valencia: 2 venues
-- Sevilla: 1 venue
-- Zaragoza: 1 venue
+60 venues across 30 cities with 1M+ population:
+- **North America** (11 cities) → 22 venues (USA: 9 cities, Canada: 2 cities)
+- **South America** (6 cities) → 12 venues (Brazil, Argentina, Chile, Colombia)
+- **Europe** (9 cities) → 18 venues (Including Madrid and Barcelona)
+- **Asia** (4 cities) → 8 venues (Korea: 1 city, Japan: 3 cities)
 
 Edit `config/venues.json` to modify the venue list.
 

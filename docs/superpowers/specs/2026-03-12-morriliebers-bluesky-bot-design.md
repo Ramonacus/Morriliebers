@@ -119,6 +119,9 @@ Spanish cities with 500k+ population and venue count:
 
 **Total:** ~13-15 well-known music venues suitable for tribute bands (mid-size clubs/theaters)
 
+**Note:** As of 2026-03-17, venues have been expanded to 60 global venues across 30 cities (1M+ population).
+See `2026-03-17-global-city-expansion-design.md` for details.
+
 ## Module Design
 
 ### `index.ts` - Main Orchestrator
