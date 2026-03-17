@@ -1,11 +1,12 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { readFileSync } from 'fs';
+import type { Venue } from '../types.js';
 
 vi.mock('fs');
 
 describe('getRandomVenue', () => {
-  let getRandomVenue: any;
-  let venues: any;
+  let getRandomVenue: () => Venue;
+  let venues: Venue[];
 
   beforeEach(async () => {
     vi.resetModules();
@@ -38,7 +39,7 @@ describe('getRandomVenue', () => {
     const venue = getRandomVenue();
 
     // Venue should exist in the venues array
-    const found = venues.some((v: any) => v.name === venue.name && v.city === venue.city);
+    const found = venues.some((v: Venue) => v.name === venue.name && v.city === venue.city);
     expect(found).toBe(true);
   });
 
@@ -63,7 +64,7 @@ describe('getRandomVenue', () => {
 });
 
 describe('venues data validation', () => {
-  let venues: any;
+  let venues: Venue[];
 
   beforeEach(async () => {
     vi.resetModules();
@@ -86,21 +87,21 @@ describe('venues data validation', () => {
   });
 
   it('all venues have required name property', () => {
-    venues.forEach((venue: any, index: number) => {
+    venues.forEach((venue: Venue, index: number) => {
       expect(venue.name, `Venue at index ${index} missing name`).toBeTruthy();
       expect(typeof venue.name, `Venue at index ${index} name not string`).toBe('string');
     });
   });
 
   it('all venues have required city property', () => {
-    venues.forEach((venue: any, index: number) => {
+    venues.forEach((venue: Venue, index: number) => {
       expect(venue.city, `Venue at index ${index} missing city`).toBeTruthy();
       expect(typeof venue.city, `Venue at index ${index} city not string`).toBe('string');
     });
   });
 
   it('optional capacity field is string if present', () => {
-    venues.forEach((venue: any, index: number) => {
+    venues.forEach((venue: Venue, index: number) => {
       if ('capacity' in venue && venue.capacity !== undefined) {
         expect(typeof venue.capacity, `Venue at index ${index} capacity not string`).toBe('string');
       }

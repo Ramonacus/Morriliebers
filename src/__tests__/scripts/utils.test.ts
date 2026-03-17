@@ -3,15 +3,16 @@ vi.mock('../../blueskyClient.js');
 vi.mock('../../storage.js');
 
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
+import type { SpyInstance } from 'vitest';
 import { BlueskyClient } from '../../blueskyClient.js';
 import { loadState, saveState } from '../../storage.js';
 import { initializeClient, loadAndValidateState, saveAndExit } from '../../scripts/utils.js';
 import { createMockState } from '../fixtures.js';
 
 describe('Script Utils', () => {
-  let exitSpy: any;
-  let consoleLogSpy: any;
-  let consoleErrorSpy: any;
+  let exitSpy: SpyInstance<[code?: number | undefined], never>;
+  let consoleLogSpy: SpyInstance<Parameters<typeof console.log>, ReturnType<typeof console.log>>;
+  let consoleErrorSpy: SpyInstance<Parameters<typeof console.error>, ReturnType<typeof console.error>>;
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -40,8 +41,8 @@ describe('Script Utils', () => {
     it('creates and authenticates a BlueskyClient with env credentials', async () => {
       const mockClient = {
         authenticate: vi.fn().mockResolvedValue(undefined)
-      };
-      vi.mocked(BlueskyClient).mockImplementation(() => mockClient as any);
+      } as unknown as BlueskyClient;
+      vi.mocked(BlueskyClient).mockImplementation(() => mockClient);
 
       const client = await initializeClient();
 
@@ -77,8 +78,8 @@ describe('Script Utils', () => {
     it('exits with error if authentication fails', async () => {
       const mockClient = {
         authenticate: vi.fn().mockRejectedValue(new Error('Auth failed'))
-      };
-      vi.mocked(BlueskyClient).mockImplementation(() => mockClient as any);
+      } as unknown as BlueskyClient;
+      vi.mocked(BlueskyClient).mockImplementation(() => mockClient);
 
       await expect(async () => {
         await initializeClient();

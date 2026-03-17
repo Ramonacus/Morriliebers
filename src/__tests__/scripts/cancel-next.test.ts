@@ -3,14 +3,16 @@ vi.mock('../../scripts/utils.js');
 vi.mock('../../scheduler.js');
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import type { SpyInstance } from 'vitest';
+import type { BlueskyClient } from '../../blueskyClient.js';
 import { initializeClient, loadAndValidateState, saveAndExit } from '../../scripts/utils.js';
 import { hasRemainingConcertsInWeek } from '../../scheduler.js';
 import { runCancelNext } from '../../scripts/cancel-next.js';
 import { createMockState, createMockConcert } from '../fixtures.js';
 
 describe('Cancel Next Script', () => {
-  let mockClient: any;
-  let consoleLogSpy: any;
+  let mockClient: Pick<BlueskyClient, 'postCancellation' | 'unpinPost'>;
+  let consoleLogSpy: SpyInstance<Parameters<typeof console.log>, ReturnType<typeof console.log>>;
 
   beforeEach(() => {
     vi.clearAllMocks();

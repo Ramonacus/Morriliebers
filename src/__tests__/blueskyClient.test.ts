@@ -13,7 +13,7 @@ import { createMockConcert } from './fixtures.js';
 import { generateExcuse } from '../excuseGenerator.js';
 
 describe('BlueskyClient', () => {
-  let mockAgent: any;
+  let mockAgent: Pick<BskyAgent, 'login' | 'post' | 'upsertProfile'>;
 
   beforeEach(() => {
     vi.clearAllMocks();
