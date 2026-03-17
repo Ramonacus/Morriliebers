@@ -1,54 +1,67 @@
 [
   {
     "name": "Sala Apolo",
-    "city": "Barcelona"
+    "city": "Barcelona",
+    "continent": "Europe"
   },
   {
     "name": "Razzmatazz",
-    "city": "Barcelona"
+    "city": "Barcelona",
+    "continent": "Europe"
   },
   {
     "name": "Sala BARTS",
-    "city": "Barcelona"
+    "city": "Barcelona",
+    "continent": "Europe"
   },
   {
     "name": "Joy Eslava",
-    "city": "Madrid"
+    "city": "Madrid",
+    "continent": "Europe"
   },
   {
     "name": "Sala Riviera",
-    "city": "Madrid"
+    "city": "Madrid",
+    "continent": "Europe"
   },
   {
     "name": "WiZink Center",
-    "city": "Madrid"
+    "city": "Madrid",
+    "continent": "Europe"
   },
   {
     "name": "La Riviera",
-    "city": "Madrid"
+    "city": "Madrid",
+    "continent": "Europe"
   },
   {
     "name": "Sala But",
-    "city": "Madrid"
+    "city": "Madrid",
+    "continent": "Europe"
   },
   {
     "name": "Café Berlín",
-    "city": "Madrid"
+    "city": "Madrid",
+    "continent": "Europe"
   },
   {
     "name": "Loco Club",
-    "city": "Valencia"
+    "city": "Valencia",
+    "continent": "Europe"
   },
   {
     "name": "Sala Moon",
-    "city": "Valencia"
+    "city": "Valencia",
+    "continent": "Europe"
   },
   {
     "name": "Sala Custom",
-    "city": "Sevilla"
+    "city": "Sevilla",
+    "continent": "Europe"
   },
   {
     "name": "Sala López",
-    "city": "Zaragoza"
+    "city": "Zaragoza",
+    "continent": "Europe"
   }
 ]
