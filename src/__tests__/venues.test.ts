@@ -1,7 +1,26 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { getRandomVenue, venues } from '../venues.js';
+import { readFileSync } from 'fs';
+
+vi.mock('fs');
 
 describe('getRandomVenue', () => {
+  let getRandomVenue: any;
+  let venues: any;
+
+  beforeEach(async () => {
+    vi.resetModules();
+    // Set up default valid venues data before importing
+    const validVenues = [
+      { name: 'Venue 1', city: 'City 1', continent: 'Europe' },
+      { name: 'Venue 2', city: 'City 2', continent: 'Asia' },
+    ];
+    vi.mocked(readFileSync).mockReturnValue(JSON.stringify(validVenues));
+
+    const module = await import('../venues.js');
+    getRandomVenue = module.getRandomVenue;
+    venues = module.venues;
+  });
+
   afterEach(() => {
     vi.restoreAllMocks();
   });
@@ -19,7 +38,7 @@ describe('getRandomVenue', () => {
     const venue = getRandomVenue();
 
     // Venue should exist in the venues array
-    const found = venues.some(v => v.name === venue.name && v.city === venue.city);
+    const found = venues.some((v: any) => v.name === venue.name && v.city === venue.city);
     expect(found).toBe(true);
   });
 
@@ -44,30 +63,70 @@ describe('getRandomVenue', () => {
 });
 
 describe('venues data validation', () => {
+  let venues: any;
+
+  beforeEach(async () => {
+    vi.resetModules();
+    const validVenues = [
+      { name: 'Venue 1', city: 'City 1', continent: 'Europe' },
+      { name: 'Venue 2', city: 'City 2', continent: 'Asia' },
+    ];
+    vi.mocked(readFileSync).mockReturnValue(JSON.stringify(validVenues));
+
+    const module = await import('../venues.js');
+    venues = module.venues;
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it('venues array is non-empty', () => {
     expect(venues.length).toBeGreaterThan(0);
   });
 
   it('all venues have required name property', () => {
-    venues.forEach((venue, index) => {
+    venues.forEach((venue: any, index: number) => {
       expect(venue.name, `Venue at index ${index} missing name`).toBeTruthy();
       expect(typeof venue.name, `Venue at index ${index} name not string`).toBe('string');
     });
   });
 
   it('all venues have required city property', () => {
-    venues.forEach((venue, index) => {
+    venues.forEach((venue: any, index: number) => {
       expect(venue.city, `Venue at index ${index} missing city`).toBeTruthy();
       expect(typeof venue.city, `Venue at index ${index} city not string`).toBe('string');
     });
   });
 
   it('optional capacity field is string if present', () => {
-    venues.forEach((venue, index) => {
+    venues.forEach((venue: any, index: number) => {
       if ('capacity' in venue && venue.capacity !== undefined) {
         expect(typeof venue.capacity, `Venue at index ${index} capacity not string`).toBe('string');
       }
     });
+  });
+});
+
+describe('continent validation', () => {
+  it('should throw error if continent is missing', async () => {
+    vi.resetModules();
+    const invalidVenues = [{ name: 'Test Venue', city: 'Test City' }];
+    vi.mocked(readFileSync).mockReturnValue(JSON.stringify(invalidVenues));
+
+    await expect(async () => {
+      await import('../venues.js');
+    }).rejects.toThrow("Venue at index 0 missing or invalid 'continent' property");
+  });
+
+  it('should throw error if continent is not a string', async () => {
+    vi.resetModules();
+    const invalidVenues = [{ name: 'Test Venue', city: 'Test City', continent: 123 }];
+    vi.mocked(readFileSync).mockReturnValue(JSON.stringify(invalidVenues));
+
+    await expect(async () => {
+      await import('../venues.js');
+    }).rejects.toThrow("Venue at index 0 missing or invalid 'continent' property");
   });
 });
 

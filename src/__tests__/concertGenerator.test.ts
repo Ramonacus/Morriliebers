@@ -8,7 +8,8 @@ describe('generateWeeklyConcerts', () => {
     // Mock getRandomVenue to return predictable venues
     vi.spyOn(venuesModule, 'getRandomVenue').mockReturnValue({
       name: 'Test Venue',
-      city: 'Test City'
+      city: 'Test City',
+      continent: 'Europe'
     });
   });
 

@@ -29,6 +29,9 @@ function loadVenues(): Venue[] {
       if (!venue.city || typeof venue.city !== 'string') {
         throw new Error(`Venue at index ${i} missing or invalid 'city' property`);
       }
+      if (!venue.continent || typeof venue.continent !== 'string') {
+        throw new Error(`Venue at index ${i} missing or invalid 'continent' property`);
+      }
     }
 
     return parsed as Venue[];

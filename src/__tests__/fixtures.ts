@@ -4,10 +4,22 @@ import type { Concert, State, Venue } from '../types.js';
  * Mock venues for testing
  */
 export const mockVenues = {
-  madrid: { name: 'Sala But', city: 'Madrid' },
-  barcelona: { name: 'Razzmatazz', city: 'Barcelona' },
-  valencia: { name: 'La Rambleta', city: 'Valencia' }
+  madrid: { name: 'Sala But', city: 'Madrid', continent: 'Europe' },
+  barcelona: { name: 'Razzmatazz', city: 'Barcelona', continent: 'Europe' },
+  valencia: { name: 'La Rambleta', city: 'Valencia', continent: 'Europe' }
 };
+
+/**
+ * Create a mock venue with optional overrides
+ */
+export function createMockVenue(overrides?: Partial<Venue>): Venue {
+  return {
+    name: 'Test Venue',
+    city: 'Test City',
+    continent: 'Europe',
+    ...overrides,
+  };
+}
 
 /**
  * Create a mock concert with optional overrides
