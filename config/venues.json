@@ -1,5 +1,225 @@
 [
   {
+    "name": "Madison Square Garden",
+    "city": "New York",
+    "continent": "North America"
+  },
+  {
+    "name": "Brooklyn Steel",
+    "city": "New York",
+    "continent": "North America"
+  },
+  {
+    "name": "The Wiltern",
+    "city": "Los Angeles",
+    "continent": "North America"
+  },
+  {
+    "name": "Hollywood Palladium",
+    "city": "Los Angeles",
+    "continent": "North America"
+  },
+  {
+    "name": "Metro Chicago",
+    "city": "Chicago",
+    "continent": "North America"
+  },
+  {
+    "name": "Thalia Hall",
+    "city": "Chicago",
+    "continent": "North America"
+  },
+  {
+    "name": "House of Blues Houston",
+    "city": "Houston",
+    "continent": "North America"
+  },
+  {
+    "name": "White Oak Music Hall",
+    "city": "Houston",
+    "continent": "North America"
+  },
+  {
+    "name": "The Van Buren",
+    "city": "Phoenix",
+    "continent": "North America"
+  },
+  {
+    "name": "Crescent Ballroom",
+    "city": "Phoenix",
+    "continent": "North America"
+  },
+  {
+    "name": "Union Transfer",
+    "city": "Philadelphia",
+    "continent": "North America"
+  },
+  {
+    "name": "The Fillmore Philadelphia",
+    "city": "Philadelphia",
+    "continent": "North America"
+  },
+  {
+    "name": "Aztec Theatre",
+    "city": "San Antonio",
+    "continent": "North America"
+  },
+  {
+    "name": "Paper Tiger",
+    "city": "San Antonio",
+    "continent": "North America"
+  },
+  {
+    "name": "The Observatory North Park",
+    "city": "San Diego",
+    "continent": "North America"
+  },
+  {
+    "name": "House of Blues San Diego",
+    "city": "San Diego",
+    "continent": "North America"
+  },
+  {
+    "name": "The Factory",
+    "city": "Dallas",
+    "continent": "North America"
+  },
+  {
+    "name": "Granada Theater",
+    "city": "Dallas",
+    "continent": "North America"
+  },
+  {
+    "name": "Danforth Music Hall",
+    "city": "Toronto",
+    "continent": "North America"
+  },
+  {
+    "name": "The Phoenix Concert Theatre",
+    "city": "Toronto",
+    "continent": "North America"
+  },
+  {
+    "name": "Metropolis",
+    "city": "Montreal",
+    "continent": "North America"
+  },
+  {
+    "name": "Corona Theatre",
+    "city": "Montreal",
+    "continent": "North America"
+  },
+  {
+    "name": "Theatro Municipal",
+    "city": "São Paulo",
+    "continent": "South America"
+  },
+  {
+    "name": "Carioca Club",
+    "city": "São Paulo",
+    "continent": "South America"
+  },
+  {
+    "name": "Circo Voador",
+    "city": "Rio de Janeiro",
+    "continent": "South America"
+  },
+  {
+    "name": "Teatro Odisseia",
+    "city": "Rio de Janeiro",
+    "continent": "South America"
+  },
+  {
+    "name": "Centro Cultural Banco do Brasil",
+    "city": "Brasília",
+    "continent": "South America"
+  },
+  {
+    "name": "Toinha Brasil Show",
+    "city": "Brasília",
+    "continent": "South America"
+  },
+  {
+    "name": "Teatro Colón",
+    "city": "Buenos Aires",
+    "continent": "South America"
+  },
+  {
+    "name": "Niceto Club",
+    "city": "Buenos Aires",
+    "continent": "South America"
+  },
+  {
+    "name": "Teatro Caupolican",
+    "city": "Santiago",
+    "continent": "South America"
+  },
+  {
+    "name": "Club Blondie",
+    "city": "Santiago",
+    "continent": "South America"
+  },
+  {
+    "name": "Teatro Jorge Eliécer Gaitán",
+    "city": "Bogotá",
+    "continent": "South America"
+  },
+  {
+    "name": "Armando Records",
+    "city": "Bogotá",
+    "continent": "South America"
+  },
+  {
+    "name": "Roundhouse",
+    "city": "London",
+    "continent": "Europe"
+  },
+  {
+    "name": "Electric Ballroom",
+    "city": "London",
+    "continent": "Europe"
+  },
+  {
+    "name": "Olympia",
+    "city": "Paris",
+    "continent": "Europe"
+  },
+  {
+    "name": "La Cigale",
+    "city": "Paris",
+    "continent": "Europe"
+  },
+  {
+    "name": "Huxleys Neue Welt",
+    "city": "Berlin",
+    "continent": "Europe"
+  },
+  {
+    "name": "SO36",
+    "city": "Berlin",
+    "continent": "Europe"
+  },
+  {
+    "name": "Atlantico Live",
+    "city": "Rome",
+    "continent": "Europe"
+  },
+  {
+    "name": "Circolo degli Artisti",
+    "city": "Rome",
+    "continent": "Europe"
+  },
+  {
+    "name": "WiZink Center",
+    "city": "Madrid",
+    "continent": "Europe"
+  },
+  {
+    "name": "Sala Riviera",
+    "city": "Madrid",
+    "continent": "Europe"
+  },
+  {
     "name": "Sala Apolo",
     "city": "Barcelona",
     "continent": "Europe"
@@ -10,58 +230,73 @@
     "continent": "Europe"
   },
   {
-    "name": "Sala BARTS",
-    "city": "Barcelona",
+    "name": "Arena Wien",
+    "city": "Vienna",
     "continent": "Europe"
   },
   {
-    "name": "Joy Eslava",
-    "city": "Madrid",
+    "name": "Flex",
+    "city": "Vienna",
     "continent": "Europe"
   },
   {
-    "name": "Sala Riviera",
-    "city": "Madrid",
+    "name": "Paradiso",
+    "city": "Amsterdam",
     "continent": "Europe"
   },
   {
-    "name": "WiZink Center",
-    "city": "Madrid",
+    "name": "Melkweg",
+    "city": "Amsterdam",
     "continent": "Europe"
   },
   {
-    "name": "La Riviera",
-    "city": "Madrid",
+    "name": "Ancienne Belgique",
+    "city": "Brussels",
     "continent": "Europe"
   },
   {
-    "name": "Sala But",
-    "city": "Madrid",
+    "name": "Botanique",
+    "city": "Brussels",
     "continent": "Europe"
   },
   {
-    "name": "Café Berlín",
-    "city": "Madrid",
-    "continent": "Europe"
+    "name": "Olympic Hall",
+    "city": "Seoul",
+    "continent": "Asia"
   },
   {
-    "name": "Loco Club",
-    "city": "Valencia",
-    "continent": "Europe"
+    "name": "Rolling Hall",
+    "city": "Seoul",
+    "continent": "Asia"
   },
   {
-    "name": "Sala Moon",
-    "city": "Valencia",
-    "continent": "Europe"
+    "name": "Shibuya WWW",
+    "city": "Tokyo",
+    "continent": "Asia"
   },
   {
-    "name": "Sala Custom",
-    "city": "Sevilla",
-    "continent": "Europe"
+    "name": "Liquidroom",
+    "city": "Tokyo",
+    "continent": "Asia"
   },
   {
-    "name": "Sala López",
-    "city": "Zaragoza",
-    "continent": "Europe"
+    "name": "Namba Hatch",
+    "city": "Osaka",
+    "continent": "Asia"
+  },
+  {
+    "name": "Shangri-La",
+    "city": "Osaka",
+    "continent": "Asia"
+  },
+  {
+    "name": "Diamond Hall",
+    "city": "Nagoya",
+    "continent": "Asia"
+  },
+  {
+    "name": "APOLLO BASE",
+    "city": "Nagoya",
+    "continent": "Asia"
   }
 ]
