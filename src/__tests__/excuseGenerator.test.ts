@@ -151,7 +151,7 @@ describe('ExcuseGenerator', () => {
       text: mockExcuse,
       finishReason: 'stop',
       usage: { promptTokens: 50, completionTokens: 20, totalTokens: 70 },
-    } as any);
+    } as Awaited<ReturnType<typeof generateText>>);
 
     await generateExcuse(mockConcert);
 
