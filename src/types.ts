@@ -4,6 +4,7 @@
 export interface Venue {
   name: string;
   city: string;
+  continent: string;  // "North America", "South America", "Europe", "Asia"
   capacity?: string;
 }
 
