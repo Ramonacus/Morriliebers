@@ -46,7 +46,7 @@ describe('ExcuseGenerator', () => {
     expect(generateText).toHaveBeenCalledTimes(1);
     expect(generateText).toHaveBeenCalledWith(
       expect.objectContaining({
-        model: expect.objectContaining({ model: 'gemini-2.0-flash-exp' }),
+        model: expect.objectContaining({ model: 'gemini-2.5-flash' }),
         temperature: 1.0,
       })
     );
@@ -158,7 +158,7 @@ describe('ExcuseGenerator', () => {
     // Verify model configuration
     const callArgs = vi.mocked(generateText).mock.calls[0][0];
     expect(callArgs.model).toEqual(expect.objectContaining({
-      model: 'gemini-2.0-flash-exp'
+      model: 'gemini-2.5-flash'
     }));
     expect(callArgs.temperature).toBe(1.0);
   });
