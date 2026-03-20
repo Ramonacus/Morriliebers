@@ -41,7 +41,7 @@ async function generateWithGemini(concert: Concert, attempt: number): Promise<st
     console.log(`[ExcuseGenerator] Attempt ${attempt}: Calling Gemini API`);
 
     const result = await generateText({
-      model: google('gemini-2.0-flash-exp'),
+      model: google('gemini-2.5-flash'),
       prompt: buildPrompt(concert),
       temperature: 1.0,
     });
