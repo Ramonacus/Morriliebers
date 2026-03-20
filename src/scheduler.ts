@@ -1,16 +1,6 @@
 import type { Concert, State, Tour } from './types.js';
 
 /**
- * @deprecated Legacy function for old weekly concert system. Use shouldGenerateTour instead.
- * Kept for backward compatibility with old tests only.
- */
-export function shouldPostWeeklyAnnouncement(_state: State): boolean {
-  // Legacy function - no longer used in production
-  // Replaced by shouldGenerateTour() for tour-based system
-  return false;
-}
-
-/**
  * Get concerts that should be canceled now (at or past their cancellation date)
  * Accepts either a flat array of concerts or an array of tours
  */
@@ -45,16 +35,6 @@ export function getConcertsToCancelNow(concertsOrTours: Concert[] | Tour[]): Con
 
     return false;
   });
-}
-
-/**
- * @deprecated Legacy function for old weekly concert system.
- * Kept for backward compatibility with old tests only.
- */
-export function hasRemainingConcertsInWeek(_canceledConcert: Concert, _allConcerts: Concert[]): boolean {
-  // Legacy function - no longer used in production
-  // Tour system doesn't use pinning/unpinning logic
-  return false;
 }
 
 /**

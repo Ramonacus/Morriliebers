@@ -114,40 +114,6 @@ describe('BlueskyClient', () => {
     });
   });
 
-  describe('pin/unpin functionality', () => {
-    it('pins a post successfully', async () => {
-      mockAgent.upsertProfile.mockImplementation((callback) => {
-        const profile = { displayName: 'Test', description: 'Bio', pinnedPost: undefined };
-        const updated = callback(profile);
-        return Promise.resolve(updated);
-      });
-
-      const client = new BlueskyClient('user.bsky.social', 'password');
-      await client.pinPost('at://post/123');
-
-      expect(mockAgent.upsertProfile).toHaveBeenCalled();
-      const callback = mockAgent.upsertProfile.mock.calls[0][0];
-      const result = callback({ displayName: 'Test', description: 'Bio' });
-      expect(result.pinnedPost).toBe('at://post/123');
-    });
-
-    it('unpins current post', async () => {
-      mockAgent.upsertProfile.mockImplementation((callback) => {
-        const profile = { displayName: 'Test', description: 'Bio', pinnedPost: 'at://post/123' };
-        const updated = callback(profile);
-        return Promise.resolve(updated);
-      });
-
-      const client = new BlueskyClient('user.bsky.social', 'password');
-      await client.unpinPost();
-
-      expect(mockAgent.upsertProfile).toHaveBeenCalled();
-      const callback = mockAgent.upsertProfile.mock.calls[0][0];
-      const result = callback({ displayName: 'Test', description: 'Bio', pinnedPost: 'at://old/123' });
-      expect(result.pinnedPost).toBeUndefined();
-    });
-  });
-
   describe('postTourAnnouncement', () => {
     it('posts overview and returns post URIs', async () => {
       // Mock post responses

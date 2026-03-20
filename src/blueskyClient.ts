@@ -213,44 +213,4 @@ ${concertLines}`;
     }
   }
 
-  /**
-   * Pin a post to the profile
-   */
-  async pinPost(postUri: string): Promise<void> {
-    try {
-      console.log('[Bluesky] Pinning post...');
-
-      // Update profile record to pin the post
-      await this.agent.upsertProfile((existing) => ({
-        ...existing,
-        pinnedPost: postUri,
-      }));
-
-      console.log('[Bluesky] Post pinned');
-    } catch (error) {
-      console.error('[Bluesky] Failed to pin post:', error);
-      // Non-fatal error, continue
-    }
-  }
-
-  /**
-   * Unpin the current pinned post
-   */
-  async unpinPost(): Promise<void> {
-    try {
-      console.log('[Bluesky] Unpinning post...');
-
-      // Update profile record to remove pinned post
-      await this.agent.upsertProfile((existing) => {
-        const updated = { ...existing };
-        delete updated['pinnedPost'];
-        return updated;
-      });
-
-      console.log('[Bluesky] Post unpinned');
-    } catch (error) {
-      console.error('[Bluesky] Failed to unpin post:', error);
-      // Non-fatal error, continue
-    }
-  }
 }
