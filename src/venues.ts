@@ -1,10 +1,35 @@
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
-import type { Venue } from './types.js';
+import { Continent, type Venue } from './types.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+
+/**
+ * Validate that each continent has at least 12 cities
+ * Throws error if any continent has fewer than 12 cities
+ */
+function validateVenueData(venues: Venue[]): void {
+  const citiesByContinent = new Map<Continent, Set<string>>();
+
+  // Count unique cities per continent
+  for (const venue of venues) {
+    if (!citiesByContinent.has(venue.continent)) {
+      citiesByContinent.set(venue.continent, new Set());
+    }
+    citiesByContinent.get(venue.continent)!.add(venue.city);
+  }
+
+  // Check each continent has at least 12 cities
+  for (const continent of Object.values(Continent)) {
+    const cities = citiesByContinent.get(continent);
+    const cityCount = cities ? cities.size : 0;
+    if (cityCount < 12) {
+      throw new Error(`${continent} has only ${cityCount} cities, minimum 12 required`);
+    }
+  }
+}
 
 /**
  * Load venues from config file
@@ -34,7 +59,12 @@ function loadVenues(): Venue[] {
       }
     }
 
-    return parsed as Venue[];
+    const venues = parsed as Venue[];
+
+    // Validate city count per continent
+    validateVenueData(venues);
+
+    return venues;
   } catch (error) {
     throw new Error(
       `Failed to load venues from config/venues.json: ${error instanceof Error ? error.message : String(error)}`
