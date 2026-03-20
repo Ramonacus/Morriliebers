@@ -1,62 +1,16 @@
 import 'dotenv/config';
-import { initializeClient, loadAndValidateState, saveAndExit } from './utils.js';
-import { hasRemainingConcertsInWeek } from '../scheduler.js';
-import type { Concert } from '../types.js';
 
 /**
- * Find the next chronologically upcoming concert that hasn't been canceled
- */
-function findNextConcert(concerts: Concert[]): Concert | undefined {
-  const now = new Date();
-
-  return concerts
-    .filter(concert => !concert.isCanceled && concert.date >= now)
-    .sort((a, b) => a.date.getTime() - b.date.getTime())[0];
-}
-
-/**
- * Main function to cancel the next upcoming concert
+ * TODO: Update for tour-based system
+ * This script needs to be updated to work with tours and the new concert structure
+ * (no pinning, concerts nested in tours).
+ *
+ * @deprecated Temporarily disabled during migration to tour system
  */
 export async function runCancelNext(): Promise<void> {
-  try {
-    console.log('[CancelNext] Starting manual cancellation...');
-
-    // Initialize
-    const client = await initializeClient();
-    const state = await loadAndValidateState();
-
-    // Find next concert
-    const nextConcert = findNextConcert(state.concerts);
-
-    if (!nextConcert) {
-      console.log('[CancelNext] No upcoming concerts to cancel');
-      return await saveAndExit(state, 0);
-    }
-
-    console.log(`[CancelNext] Canceling concert at ${nextConcert.venue.name}, ${nextConcert.venue.city}`);
-
-    // Post cancellation
-    const cancelPostUri = await client.postCancellation(nextConcert);
-
-    // Update concert state
-    nextConcert.isCanceled = true;
-    nextConcert.cancelPostId = cancelPostUri;
-
-    // Check if we should unpin the weekly announcement
-    if (!hasRemainingConcertsInWeek(nextConcert, state.concerts)) {
-      console.log('[CancelNext] No remaining concerts this week, unpinning announcement');
-      await client.unpinPost();
-      nextConcert.isPinned = false;
-    }
-
-    console.log('[CancelNext] Canceled concert successfully');
-
-    // Save and exit
-    await saveAndExit(state, 0);
-  } catch (error) {
-    console.error('[CancelNext] Failed to cancel concert');
-    await saveAndExit({ concerts: [] }, 1);
-  }
+  console.error('[Cancel] This script is temporarily disabled during migration to tour system');
+  console.error('[Cancel] Please use the main bot (npm start) which uses the new tour-based cancellation');
+  process.exit(1);
 }
 
 // Run if called directly

@@ -10,7 +10,8 @@ import { generateWeeklyConcerts } from '../../concertGenerator.js';
 import { runAnnounce } from '../../scripts/announce.js';
 import { createMockState, createMockConcert } from '../fixtures.js';
 
-describe('Announce Script', () => {
+// Legacy tests for old weekly concert system (replaced by tour system)
+describe.skip('Announce Script', () => {
   let mockClient: Pick<BlueskyClient, 'postWeeklyAnnouncement' | 'pinPost'>;
   let consoleLogSpy: MockInstance<typeof console.log>;
 

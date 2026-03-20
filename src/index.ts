@@ -1,11 +1,10 @@
 import 'dotenv/config';
 import { BlueskyClient } from './blueskyClient.js';
 import { loadState, saveState } from './storage.js';
-import { generateWeeklyConcerts } from './concertGenerator.js';
+import { generateTour } from './tourGenerator.js';
 import {
-  shouldPostWeeklyAnnouncement,
+  shouldGenerateTour,
   getConcertsToCancelNow,
-  hasRemainingConcertsInWeek,
 } from './scheduler.js';
 import type { State } from './types.js';
 
@@ -33,7 +32,8 @@ async function initialize(): Promise<void> {
 
   // Load state
   state = await loadState();
-  console.log(`[Main] Loaded state with ${state.concerts.length} concerts`);
+  const totalConcerts = state.tours.reduce((sum, tour) => sum + tour.concerts.length, 0);
+  console.log(`[Main] Loaded state with ${state.tours.length} tours (${totalConcerts} concerts)`);
 
   // Initialize Bluesky client
   client = new BlueskyClient(BLUESKY_IDENTIFIER as string, BLUESKY_APP_PASSWORD as string);
@@ -43,40 +43,36 @@ async function initialize(): Promise<void> {
 }
 
 /**
- * Handle weekly announcement posting
+ * Handle tour generation and announcement
  */
-async function handleWeeklyAnnouncement(): Promise<void> {
-  if (!shouldPostWeeklyAnnouncement(state)) {
+async function handleTourGeneration(): Promise<void> {
+  if (!shouldGenerateTour(state)) {
     return;
   }
 
-  console.log('[Main] Time to post weekly announcement!');
+  console.log('[Main] Time to generate new tour!');
 
   try {
-    // Generate concerts for the week
-    const concerts = generateWeeklyConcerts();
+    // Generate tour
+    const tour = generateTour();
+    console.log(`[Main] Generated ${tour.concerts.length}-concert tour of ${tour.continent}`);
 
-    // Post announcement
-    const postUri = await client.postWeeklyAnnouncement(concerts);
+    // Post tour announcement (overview + weekly threads)
+    const { overviewPostId, weeklyPostIds } = await client.postTourAnnouncement(tour);
 
-    // Pin the announcement
-    await client.pinPost(postUri);
+    // Update tour with post IDs
+    tour.overviewPostId = overviewPostId;
+    tour.weeklyPostIds = weeklyPostIds;
 
     // Update state
-    concerts.forEach(concert => {
-      concert.postId = postUri;
-      concert.isPinned = true;
-    });
-
-    state.concerts.push(...concerts);
-    state.lastAnnouncementDate = new Date();
-    state.weeklyPostId = postUri;
+    state.tours.push(tour);
+    state.lastTourGenerationDate = new Date();
 
     await saveState(state);
 
-    console.log(`[Main] Posted and pinned ${concerts.length} concerts`);
+    console.log(`[Main] Tour announcement posted: ${tour.concerts.length} concerts over ${Math.max(...tour.concerts.map(c => c.weekInTour))} weeks`);
   } catch (error) {
-    console.error('[Main] Error handling weekly announcement:', error);
+    console.error('[Main] Error handling tour generation:', error);
   }
 }
 
@@ -84,7 +80,7 @@ async function handleWeeklyAnnouncement(): Promise<void> {
  * Handle concert cancellations
  */
 async function handleCancellations(): Promise<void> {
-  const concertsToCancel = getConcertsToCancelNow(state.concerts);
+  const concertsToCancel = getConcertsToCancelNow(state.tours);
 
   if (concertsToCancel.length === 0) {
     return;
@@ -100,23 +96,6 @@ async function handleCancellations(): Promise<void> {
       // Update concert state
       concert.isCanceled = true;
       concert.cancelPostId = cancelPostUri;
-
-      // Check if we should unpin the weekly announcement
-      if (!hasRemainingConcertsInWeek(concert, state.concerts)) {
-        console.log('[Main] No remaining concerts this week, unpinning announcement');
-        await client.unpinPost();
-
-        // Update all concerts in this week to reflect unpinned status
-        const weekStart = getWeekStart(concert.date);
-        const weekEnd = new Date(weekStart);
-        weekEnd.setDate(weekEnd.getDate() + 7);
-
-        state.concerts.forEach(c => {
-          if (c.date >= weekStart && c.date < weekEnd) {
-            c.isPinned = false;
-          }
-        });
-      }
 
       await saveState(state);
 
@@ -135,8 +114,8 @@ async function mainLoop(): Promise<void> {
   console.log(`\n[Main] Loop iteration at ${timestamp}`);
 
   try {
-    // Handle weekly announcement
-    await handleWeeklyAnnouncement();
+    // Handle tour generation
+    await handleTourGeneration();
 
     // Handle cancellations
     await handleCancellations();
@@ -145,18 +124,6 @@ async function mainLoop(): Promise<void> {
   }
 
   console.log('[Main] Loop iteration complete');
-}
-
-/**
- * Get the start of the week (Monday) for a given date
- */
-function getWeekStart(date: Date): Date {
-  const d = new Date(date);
-  const day = d.getDay();
-  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-  d.setDate(diff);
-  d.setHours(0, 0, 0, 0);
-  return d;
 }
 
 /**

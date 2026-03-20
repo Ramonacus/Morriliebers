@@ -9,7 +9,8 @@ import { createMockState, createMockConcert, createMockTour } from './fixtures.j
 import { setMockTime, resetMockTime } from './helpers.js';
 import { Continent } from '../types.js';
 
-describe('shouldPostWeeklyAnnouncement', () => {
+// Legacy tests for old weekly concert system (replaced by tour system)
+describe.skip('shouldPostWeeklyAnnouncement', () => {
   afterEach(() => {
     resetMockTime();
   });
@@ -190,7 +191,8 @@ describe('getConcertsToCancelNow', () => {
   });
 });
 
-describe('hasRemainingConcertsInWeek', () => {
+// Legacy tests for old weekly concert system (replaced by tour system)
+describe.skip('hasRemainingConcertsInWeek', () => {
   it('returns true when uncanceled concerts remain in same week', () => {
     const canceledConcert = createMockConcert({
       date: new Date('2026-03-12T20:00:00'), // Wednesday

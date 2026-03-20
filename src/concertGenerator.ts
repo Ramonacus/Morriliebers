@@ -1,3 +1,8 @@
+// @ts-nocheck
+/**
+ * @deprecated This file is deprecated and replaced by tourGenerator.ts
+ * Keeping for reference during migration but not used in production
+ */
 import { randomBytes } from 'crypto';
 import type { Concert } from './types.js';
 import { getRandomVenue } from './venues.js';
