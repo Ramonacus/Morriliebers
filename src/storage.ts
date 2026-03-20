@@ -15,14 +15,25 @@ const STATE_FILE = join(DATA_DIR, 'concerts.json');
  */
 function serializeState(state: State): SerializedState {
   return {
-    concerts: state.concerts.map(concert => ({
-      ...concert,
-      date: concert.date.toISOString(),
-      announcementDate: concert.announcementDate.toISOString(),
-      cancellationDate: concert.cancellationDate?.toISOString(),
+    tours: state.tours.map(tour => ({
+      id: tour.id,
+      continent: tour.continent,
+      startDate: tour.startDate.toISOString(),
+      endDate: tour.endDate.toISOString(),
+      announcementDate: tour.announcementDate.toISOString(),
+      overviewPostId: tour.overviewPostId,
+      weeklyPostIds: tour.weeklyPostIds,
+      concerts: tour.concerts.map(concert => ({
+        id: concert.id,
+        venue: concert.venue,
+        date: concert.date.toISOString(),
+        cancellationDate: concert.cancellationDate.toISOString(),
+        weekInTour: concert.weekInTour,
+        isCanceled: concert.isCanceled,
+        cancelPostId: concert.cancelPostId,
+      })),
     })),
-    lastAnnouncementDate: state.lastAnnouncementDate?.toISOString(),
-    weeklyPostId: state.weeklyPostId,
+    lastTourGenerationDate: state.lastTourGenerationDate?.toISOString(),
   };
 }
 
@@ -31,16 +42,27 @@ function serializeState(state: State): SerializedState {
  */
 function deserializeState(serialized: SerializedState): State {
   return {
-    concerts: serialized.concerts.map(concert => ({
-      ...concert,
-      date: new Date(concert.date),
-      announcementDate: new Date(concert.announcementDate),
-      cancellationDate: concert.cancellationDate ? new Date(concert.cancellationDate) : undefined,
+    tours: serialized.tours.map(tour => ({
+      id: tour.id,
+      continent: tour.continent,
+      startDate: new Date(tour.startDate),
+      endDate: new Date(tour.endDate),
+      announcementDate: new Date(tour.announcementDate),
+      overviewPostId: tour.overviewPostId,
+      weeklyPostIds: tour.weeklyPostIds,
+      concerts: tour.concerts.map(concert => ({
+        id: concert.id,
+        venue: concert.venue,
+        date: new Date(concert.date),
+        cancellationDate: new Date(concert.cancellationDate),
+        weekInTour: concert.weekInTour,
+        isCanceled: concert.isCanceled,
+        cancelPostId: concert.cancelPostId,
+      })),
     })),
-    lastAnnouncementDate: serialized.lastAnnouncementDate
-      ? new Date(serialized.lastAnnouncementDate)
+    lastTourGenerationDate: serialized.lastTourGenerationDate
+      ? new Date(serialized.lastTourGenerationDate)
       : undefined,
-    weeklyPostId: serialized.weeklyPostId,
   };
 }
 
@@ -57,7 +79,7 @@ export async function loadState(): Promise<State> {
     // Return empty state if file doesn't exist
     if (!existsSync(STATE_FILE)) {
       console.log('[Storage] No state file found, creating new state');
-      const emptyState: State = { concerts: [] };
+      const emptyState: State = { tours: [] };
       await saveState(emptyState);
       return emptyState;
     }
@@ -82,7 +104,7 @@ export async function loadState(): Promise<State> {
 
     // Return empty state
     console.log('[Storage] Returning empty state');
-    return { concerts: [] };
+    return { tours: [] };
   }
 }
 

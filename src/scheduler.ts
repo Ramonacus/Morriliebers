@@ -34,9 +34,25 @@ export function shouldPostWeeklyAnnouncement(state: State): boolean {
 
 /**
  * Get concerts that should be canceled now (at or past their cancellation date)
+ * Accepts either a flat array of concerts or an array of tours
  */
-export function getConcertsToCancelNow(concerts: Concert[]): Concert[] {
+export function getConcertsToCancelNow(concertsOrTours: Concert[] | Tour[]): Concert[] {
   const now = new Date();
+
+  // Determine if we're working with tours or concerts
+  let concerts: Concert[];
+  if (concertsOrTours.length === 0) {
+    return [];
+  }
+
+  // Check if first item is a Tour (has 'concerts' property)
+  if ('concerts' in concertsOrTours[0]) {
+    // Extract concerts from all tours
+    concerts = (concertsOrTours as Tour[]).flatMap(tour => tour.concerts);
+  } else {
+    // Already a flat concert array
+    concerts = concertsOrTours as Concert[];
+  }
 
   return concerts.filter(concert => {
     // Skip already canceled concerts
