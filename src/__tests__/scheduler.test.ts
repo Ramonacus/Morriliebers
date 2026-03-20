@@ -1,11 +1,13 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import {
   shouldPostWeeklyAnnouncement,
+  shouldGenerateTour,
   getConcertsToCancelNow,
   hasRemainingConcertsInWeek
 } from '../scheduler.js';
-import { createMockState, createMockConcert } from './fixtures.js';
+import { createMockState, createMockConcert, createMockTour } from './fixtures.js';
 import { setMockTime, resetMockTime } from './helpers.js';
+import { Continent } from '../types.js';
 
 describe('shouldPostWeeklyAnnouncement', () => {
   afterEach(() => {
@@ -247,5 +249,89 @@ describe('hasRemainingConcertsInWeek', () => {
     const result = hasRemainingConcertsInWeek(canceledConcert, allConcerts);
 
     expect(result).toBe(false);
+  });
+});
+
+describe('shouldGenerateTour', () => {
+  afterEach(() => {
+    resetMockTime();
+  });
+
+  it('returns true during morning window (8:00-14:00) with no active concerts', () => {
+    // Thursday March 20, 2026 at 10:00
+    setMockTime(new Date('2026-03-20T10:00:00'));
+
+    const state = createMockState({
+      tours: [],
+      lastTourGenerationDate: undefined
+    });
+
+    const result = shouldGenerateTour(state);
+    expect(result).toBe(true);
+  });
+
+  it('returns true at 8:00 (start of window)', () => {
+    setMockTime(new Date('2026-03-20T08:00:00'));
+    const state = createMockState({ tours: [] });
+
+    expect(shouldGenerateTour(state)).toBe(true);
+  });
+
+  it('returns true at 13:59 (end of window)', () => {
+    setMockTime(new Date('2026-03-20T13:59:00'));
+    const state = createMockState({ tours: [] });
+
+    expect(shouldGenerateTour(state)).toBe(true);
+  });
+
+  it('returns false before 8:00', () => {
+    setMockTime(new Date('2026-03-20T07:59:00'));
+    const state = createMockState({ tours: [] });
+
+    expect(shouldGenerateTour(state)).toBe(false);
+  });
+
+  it('returns false after 14:00', () => {
+    setMockTime(new Date('2026-03-20T14:00:00'));
+    const state = createMockState({ tours: [] });
+
+    expect(shouldGenerateTour(state)).toBe(false);
+  });
+
+  it('returns false if any concert is not canceled', () => {
+    setMockTime(new Date('2026-03-20T10:00:00'));
+
+    const tour = createMockTour({
+      concerts: [
+        createMockConcert({ isCanceled: true }),
+        createMockConcert({ isCanceled: false }) // One active
+      ]
+    });
+
+    const state = createMockState({ tours: [tour] });
+
+    expect(shouldGenerateTour(state)).toBe(false);
+  });
+
+  it('returns false if tour already generated today', () => {
+    setMockTime(new Date('2026-03-20T10:00:00'));
+
+    const state = createMockState({
+      tours: [],
+      lastTourGenerationDate: new Date('2026-03-20T09:00:00') // Earlier today
+    });
+
+    expect(shouldGenerateTour(state)).toBe(false);
+  });
+
+  it('returns true if tour generated yesterday', () => {
+    setMockTime(new Date('2026-03-20T10:00:00'));
+
+    const state = createMockState({
+      tours: [],
+      lastTourGenerationDate: new Date('2026-03-19T10:00:00') // Yesterday
+    });
+
+    expect(shouldGenerateTour(state)).toBe(true);
   });
 });

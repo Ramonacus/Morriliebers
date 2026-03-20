@@ -1,4 +1,4 @@
-import type { Concert, State } from './types.js';
+import type { Concert, State, Tour } from './types.js';
 
 /**
  * Check if current time is Monday between 10:00-14:00 (Spain time)
@@ -82,4 +82,51 @@ function getWeekStart(date: Date): Date {
   d.setDate(diff);
   d.setHours(0, 0, 0, 0);
   return d;
+}
+
+/**
+ * Check if any concerts are active (not canceled) across all tours
+ */
+export function hasActiveConcerts(tours: Tour[]): boolean {
+  for (const tour of tours) {
+    for (const concert of tour.concerts) {
+      if (!concert.isCanceled) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+/**
+ * Check if a tour should be generated
+ * Conditions: 8:00-14:00, all concerts canceled, no tour generated today
+ */
+export function shouldGenerateTour(state: State): boolean {
+  const now = new Date();
+
+  // Check if time is between 8:00-14:00
+  const hours = now.getHours();
+  if (hours < 8 || hours >= 14) {
+    return false;
+  }
+
+  // Check if any concerts are still active
+  if (hasActiveConcerts(state.tours)) {
+    return false;
+  }
+
+  // Check if we've already generated a tour today
+  if (state.lastTourGenerationDate) {
+    const lastGenDate = new Date(state.lastTourGenerationDate);
+    const today = new Date(now);
+    today.setHours(0, 0, 0, 0);
+    lastGenDate.setHours(0, 0, 0, 0);
+
+    if (lastGenDate.getTime() === today.getTime()) {
+      return false;
+    }
+  }
+
+  return true;
 }
