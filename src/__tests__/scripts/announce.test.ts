@@ -3,7 +3,7 @@ vi.mock('../../scripts/utils.js');
 vi.mock('../../concertGenerator.js');
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import type { SpyInstance } from 'vitest';
+import type { MockInstance } from 'vitest';
 import type { BlueskyClient } from '../../blueskyClient.js';
 import { initializeClient, loadAndValidateState, saveAndExit } from '../../scripts/utils.js';
 import { generateWeeklyConcerts } from '../../concertGenerator.js';
@@ -12,7 +12,7 @@ import { createMockState, createMockConcert } from '../fixtures.js';
 
 describe('Announce Script', () => {
   let mockClient: Pick<BlueskyClient, 'postWeeklyAnnouncement' | 'pinPost'>;
-  let consoleLogSpy: SpyInstance<Parameters<typeof console.log>, ReturnType<typeof console.log>>;
+  let consoleLogSpy: MockInstance<typeof console.log>;
 
   beforeEach(() => {
     vi.clearAllMocks();

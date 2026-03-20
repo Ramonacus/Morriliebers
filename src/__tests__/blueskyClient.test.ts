@@ -63,8 +63,8 @@ describe('BlueskyClient', () => {
 
       const client = new BlueskyClient('user.bsky.social', 'password');
       const concerts = [
-        createMockConcert({ id: '1', venue: { name: 'Sala But', city: 'Madrid' } }),
-        createMockConcert({ id: '2', venue: { name: 'Razzmatazz', city: 'Barcelona' } })
+        createMockConcert({ id: '1', venue: { name: 'Sala But', city: 'Madrid', continent: 'Europe' } }),
+        createMockConcert({ id: '2', venue: { name: 'Razzmatazz', city: 'Barcelona', continent: 'Europe' } })
       ];
 
       const result = await client.postWeeklyAnnouncement(concerts);
@@ -81,9 +81,9 @@ describe('BlueskyClient', () => {
 
       const client = new BlueskyClient('user.bsky.social', 'password');
       const concerts = [
-        createMockConcert({ venue: { name: 'Venue 1', city: 'City 1' } }),
-        createMockConcert({ venue: { name: 'Venue 2', city: 'City 2' } }),
-        createMockConcert({ venue: { name: 'Venue 3', city: 'City 3' } })
+        createMockConcert({ venue: { name: 'Venue 1', city: 'City 1', continent: 'Europe' } }),
+        createMockConcert({ venue: { name: 'Venue 2', city: 'City 2', continent: 'Europe' } }),
+        createMockConcert({ venue: { name: 'Venue 3', city: 'City 3', continent: 'Europe' } })
       ];
 
       await client.postWeeklyAnnouncement(concerts);
@@ -100,7 +100,7 @@ describe('BlueskyClient', () => {
       mockAgent.post.mockResolvedValue({ uri: 'at://cancel/123' });
 
       const client = new BlueskyClient('user.bsky.social', 'password');
-      const concert = createMockConcert({ venue: { name: 'Test Venue', city: 'Test City' } });
+      const concert = createMockConcert({ venue: { name: 'Test Venue', city: 'Test City', continent: 'Europe' } });
 
       const result = await client.postCancellation(concert);
 

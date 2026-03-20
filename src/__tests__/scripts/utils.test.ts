@@ -3,16 +3,16 @@ vi.mock('../../blueskyClient.js');
 vi.mock('../../storage.js');
 
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
-import type { SpyInstance } from 'vitest';
+import type { MockInstance } from 'vitest';
 import { BlueskyClient } from '../../blueskyClient.js';
 import { loadState, saveState } from '../../storage.js';
 import { initializeClient, loadAndValidateState, saveAndExit } from '../../scripts/utils.js';
 import { createMockState } from '../fixtures.js';
 
 describe('Script Utils', () => {
-  let exitSpy: SpyInstance<[code?: number | undefined], never>;
-  let consoleLogSpy: SpyInstance<Parameters<typeof console.log>, ReturnType<typeof console.log>>;
-  let consoleErrorSpy: SpyInstance<Parameters<typeof console.error>, ReturnType<typeof console.error>>;
+  let exitSpy: MockInstance<typeof process.exit>;
+  let consoleLogSpy: MockInstance<typeof console.log>;
+  let consoleErrorSpy: MockInstance<typeof console.error>;
 
   beforeEach(() => {
     vi.clearAllMocks();
