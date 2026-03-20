@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { readFileSync } from 'fs';
-import type { Venue } from '../types.js';
+import { Continent, type Venue } from '../types.js';
 
 vi.mock('fs');
 
@@ -10,11 +10,18 @@ describe('getRandomVenue', () => {
 
   beforeEach(async () => {
     vi.resetModules();
-    // Set up default valid venues data before importing
-    const validVenues = [
-      { name: 'Venue 1', city: 'City 1', continent: 'Europe' },
-      { name: 'Venue 2', city: 'City 2', continent: 'Asia' },
-    ];
+    // Set up default valid venues data before importing (12 cities per continent minimum)
+    const validVenues = [];
+    const continents = [Continent.NorthAmerica, Continent.SouthAmerica, Continent.Europe, Continent.Asia];
+    for (const continent of continents) {
+      for (let i = 1; i <= 12; i++) {
+        validVenues.push({
+          name: `Venue ${continent}-${i}`,
+          city: `City${i}`,
+          continent: continent
+        });
+      }
+    }
     vi.mocked(readFileSync).mockReturnValue(JSON.stringify(validVenues));
 
     const module = await import('../venues.js');
@@ -68,10 +75,17 @@ describe('venues data validation', () => {
 
   beforeEach(async () => {
     vi.resetModules();
-    const validVenues = [
-      { name: 'Venue 1', city: 'City 1', continent: 'Europe' },
-      { name: 'Venue 2', city: 'City 2', continent: 'Asia' },
-    ];
+    const validVenues = [];
+    const continents = [Continent.NorthAmerica, Continent.SouthAmerica, Continent.Europe, Continent.Asia];
+    for (const continent of continents) {
+      for (let i = 1; i <= 12; i++) {
+        validVenues.push({
+          name: `Venue ${continent}-${i}`,
+          city: `City${i}`,
+          continent: continent
+        });
+      }
+    }
     vi.mocked(readFileSync).mockReturnValue(JSON.stringify(validVenues));
 
     const module = await import('../venues.js');
@@ -128,6 +142,45 @@ describe('continent validation', () => {
     await expect(async () => {
       await import('../venues.js');
     }).rejects.toThrow("Venue at index 0 missing or invalid 'continent' property");
+  });
+});
+
+describe('continent city count validation', () => {
+  it('should throw error if any continent has fewer than 12 cities', async () => {
+    vi.resetModules();
+    // Create venues with only 3 cities in North America
+    const insufficientVenues = [
+      { name: 'Venue 1', city: 'City1', continent: 'North America' },
+      { name: 'Venue 2', city: 'City1', continent: 'North America' },
+      { name: 'Venue 3', city: 'City2', continent: 'North America' },
+      { name: 'Venue 4', city: 'City3', continent: 'North America' },
+    ];
+    vi.mocked(readFileSync).mockReturnValue(JSON.stringify(insufficientVenues));
+
+    await expect(async () => {
+      await import('../venues.js');
+    }).rejects.toThrow('North America has only 3 cities, minimum 12 required');
+  });
+
+  it('should not throw error if all continents have at least 12 cities', async () => {
+    vi.resetModules();
+    // Create venues with exactly 12 cities per continent
+    const sufficientVenues = [];
+    const continents = [Continent.NorthAmerica, Continent.SouthAmerica, Continent.Europe, Continent.Asia];
+
+    for (const continent of continents) {
+      for (let i = 1; i <= 12; i++) {
+        sufficientVenues.push({
+          name: `Venue ${continent}-${i}`,
+          city: `City${i}`,
+          continent: continent
+        });
+      }
+    }
+    vi.mocked(readFileSync).mockReturnValue(JSON.stringify(sufficientVenues));
+
+    // Should not throw
+    await expect(import('../venues.js')).resolves.toBeDefined();
   });
 });
 

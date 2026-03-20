@@ -110,6 +110,16 @@
     "continent": "North America"
   },
   {
+    "name": "Showbox",
+    "city": "Seattle",
+    "continent": "North America"
+  },
+  {
+    "name": "Neumos",
+    "city": "Seattle",
+    "continent": "North America"
+  },
+  {
     "name": "Theatro Municipal",
     "city": "São Paulo",
     "continent": "South America"
@@ -167,6 +177,66 @@
   {
     "name": "Armando Records",
     "city": "Bogotá",
+    "continent": "South America"
+  },
+  {
+    "name": "Teatro Municipal",
+    "city": "Lima",
+    "continent": "South America"
+  },
+  {
+    "name": "La Noche",
+    "city": "Lima",
+    "continent": "South America"
+  },
+  {
+    "name": "Sala Zitarrosa",
+    "city": "Montevideo",
+    "continent": "South America"
+  },
+  {
+    "name": "Bluzz Live",
+    "city": "Montevideo",
+    "continent": "South America"
+  },
+  {
+    "name": "Teatro Sucre",
+    "city": "Quito",
+    "continent": "South America"
+  },
+  {
+    "name": "Trude",
+    "city": "Quito",
+    "continent": "South America"
+  },
+  {
+    "name": "Teatro Teresa Carreño",
+    "city": "Caracas",
+    "continent": "South America"
+  },
+  {
+    "name": "Trasnocho Cultural",
+    "city": "Caracas",
+    "continent": "South America"
+  },
+  {
+    "name": "Teatro Municipal Alberto Saavedra Pérez",
+    "city": "La Paz",
+    "continent": "South America"
+  },
+  {
+    "name": "Thelonius",
+    "city": "La Paz",
+    "continent": "South America"
+  },
+  {
+    "name": "Teatro Municipal",
+    "city": "Asunción",
+    "continent": "South America"
+  },
+  {
+    "name": "Kilkenny",
+    "city": "Asunción",
     "continent": "South America"
   },
   {
@@ -260,6 +330,36 @@
     "continent": "Europe"
   },
   {
+    "name": "LAV - Lisboa ao Vivo",
+    "city": "Lisbon",
+    "continent": "Europe"
+  },
+  {
+    "name": "Music Box",
+    "city": "Lisbon",
+    "continent": "Europe"
+  },
+  {
+    "name": "Razzmatazz",
+    "city": "Prague",
+    "continent": "Europe"
+  },
+  {
+    "name": "MeetFactory",
+    "city": "Prague",
+    "continent": "Europe"
+  },
+  {
+    "name": "Vega",
+    "city": "Copenhagen",
+    "continent": "Europe"
+  },
+  {
+    "name": "Loppen",
+    "city": "Copenhagen",
+    "continent": "Europe"
+  },
+  {
     "name": "Olympic Hall",
     "city": "Seoul",
     "continent": "Asia"
@@ -297,6 +397,86 @@
   {
     "name": "APOLLO BASE",
     "city": "Nagoya",
+    "continent": "Asia"
+  },
+  {
+    "name": "Live RCA",
+    "city": "Bangkok",
+    "continent": "Asia"
+  },
+  {
+    "name": "Saxophone Pub",
+    "city": "Bangkok",
+    "continent": "Asia"
+  },
+  {
+    "name": "Warm Up Cafe",
+    "city": "Chiang Mai",
+    "continent": "Asia"
+  },
+  {
+    "name": "Zoe in Yellow",
+    "city": "Chiang Mai",
+    "continent": "Asia"
+  },
+  {
+    "name": "The Coliseum",
+    "city": "Singapore",
+    "continent": "Asia"
+  },
+  {
+    "name": "Zouk",
+    "city": "Singapore",
+    "continent": "Asia"
+  },
+  {
+    "name": "MacPherson Stadium",
+    "city": "Hong Kong",
+    "continent": "Asia"
+  },
+  {
+    "name": "TTN This Town Needs",
+    "city": "Hong Kong",
+    "continent": "Asia"
+  },
+  {
+    "name": "Legacy Taipei",
+    "city": "Taipei",
+    "continent": "Asia"
+  },
+  {
+    "name": "The Wall",
+    "city": "Taipei",
+    "continent": "Asia"
+  },
+  {
+    "name": "Smart Araneta Coliseum",
+    "city": "Manila",
+    "continent": "Asia"
+  },
+  {
+    "name": "12 Monkeys Music Hall",
+    "city": "Manila",
+    "continent": "Asia"
+  },
+  {
+    "name": "Drum Logos",
+    "city": "Fukuoka",
+    "continent": "Asia"
+  },
+  {
+    "name": "CB Fukuoka",
+    "city": "Fukuoka",
+    "continent": "Asia"
+  },
+  {
+    "name": "Sapporo City Jazz",
+    "city": "Sapporo",
+    "continent": "Asia"
+  },
+  {
+    "name": "Bessie Hall",
+    "city": "Sapporo",
     "continent": "Asia"
   }
 ]

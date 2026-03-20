@@ -6,8 +6,9 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { existsSync } from 'fs';
 import { readFile, writeFile, mkdir, rename } from 'fs/promises';
 import { loadState, saveState } from '../storage.js';
-import { createMockState, createMockConcert } from './fixtures.js';
+import { createMockState, createMockConcert, createMockTour } from './fixtures.js';
 import { setupFileSystemMocks } from './helpers.js';
+import { Continent } from '../types.js';
 
 describe('storage', () => {
   beforeEach(() => {
@@ -15,22 +16,30 @@ describe('storage', () => {
   });
 
   describe('serialization round-trip', () => {
-    it('preserves all concert data through save and load', async () => {
+    it('preserves all tour and concert data through save and load', async () => {
       const originalState = createMockState({
-        concerts: [
-          createMockConcert({
-            id: '1',
-            date: new Date('2026-03-15T20:00:00Z'),
+        tours: [
+          createMockTour({
+            id: 'tour-1',
+            continent: Continent.Europe,
+            startDate: new Date('2026-03-15T20:00:00Z'),
+            endDate: new Date('2026-03-29T22:00:00Z'),
             announcementDate: new Date('2026-03-10T12:00:00Z'),
-            cancellationDate: new Date('2026-03-14T22:00:00Z'),
-            postId: 'post-123',
-            cancelPostId: 'cancel-456',
-            isPinned: true,
-            isCanceled: false
+            overviewPostId: 'overview-123',
+            weeklyPostIds: ['week1-456', 'week2-789'],
+            concerts: [
+              createMockConcert({
+                id: '1',
+                date: new Date('2026-03-15T20:00:00Z'),
+                cancellationDate: new Date('2026-03-14T22:00:00Z'),
+                weekInTour: 1,
+                cancelPostId: 'cancel-456',
+                isCanceled: false
+              })
+            ]
           })
         ],
-        lastAnnouncementDate: new Date('2026-03-10T12:00:00Z'),
-        weeklyPostId: 'weekly-789'
+        lastTourGenerationDate: new Date('2026-03-10T12:00:00Z')
       });
 
       let savedData: string = '';
@@ -50,36 +59,45 @@ describe('storage', () => {
       await saveState(originalState);
       const loadedState = await loadState();
 
-      // Verify all data preserved
-      expect(loadedState.concerts).toHaveLength(1);
-      expect(loadedState.concerts[0].id).toBe('1');
-      // Venue object preserved
-      expect(loadedState.concerts[0].venue).toEqual(originalState.concerts[0].venue);
-      // Dates converted from ISO strings to Date objects
-      expect(loadedState.concerts[0].date.toISOString()).toBe('2026-03-15T20:00:00.000Z');
-      expect(loadedState.concerts[0].announcementDate.toISOString()).toBe('2026-03-10T12:00:00.000Z');
-      expect(loadedState.concerts[0].cancellationDate?.toISOString()).toBe('2026-03-14T22:00:00.000Z');
-      // Other properties preserved
-      expect(loadedState.concerts[0].postId).toBe('post-123');
-      expect(loadedState.concerts[0].cancelPostId).toBe('cancel-456');
-      expect(loadedState.concerts[0].isPinned).toBe(true);
-      expect(loadedState.concerts[0].isCanceled).toBe(false);
-      expect(loadedState.lastAnnouncementDate?.toISOString()).toBe('2026-03-10T12:00:00.000Z');
-      expect(loadedState.weeklyPostId).toBe('weekly-789');
+      // Verify tour data preserved
+      expect(loadedState.tours).toHaveLength(1);
+      expect(loadedState.tours[0].id).toBe('tour-1');
+      expect(loadedState.tours[0].continent).toBe(Continent.Europe);
+      expect(loadedState.tours[0].startDate).toBeInstanceOf(Date);
+      expect(loadedState.tours[0].endDate).toBeInstanceOf(Date);
+      expect(loadedState.tours[0].announcementDate).toBeInstanceOf(Date);
+      expect(loadedState.tours[0].overviewPostId).toBe('overview-123');
+      expect(loadedState.tours[0].weeklyPostIds).toEqual(['week1-456', 'week2-789']);
+
+      // Verify concert data within tour preserved
+      expect(loadedState.tours[0].concerts).toHaveLength(1);
+      expect(loadedState.tours[0].concerts[0].id).toBe('1');
+      expect(loadedState.tours[0].concerts[0].venue).toEqual(originalState.tours[0].concerts[0].venue);
+      expect(loadedState.tours[0].concerts[0].date.toISOString()).toBe('2026-03-15T20:00:00.000Z');
+      expect(loadedState.tours[0].concerts[0].cancellationDate.toISOString()).toBe('2026-03-14T22:00:00.000Z');
+      expect(loadedState.tours[0].concerts[0].weekInTour).toBe(1);
+      expect(loadedState.tours[0].concerts[0].cancelPostId).toBe('cancel-456');
+      expect(loadedState.tours[0].concerts[0].isCanceled).toBe(false);
+
+      // Verify state-level data preserved
+      expect(loadedState.lastTourGenerationDate?.toISOString()).toBe('2026-03-10T12:00:00.000Z');
     });
 
     it('handles missing optional fields', async () => {
       const originalState = createMockState({
-        concerts: [
-          createMockConcert({
-            id: '1',
-            cancellationDate: undefined,
-            postId: undefined,
-            cancelPostId: undefined
+        tours: [
+          createMockTour({
+            id: 'tour-1',
+            overviewPostId: undefined,
+            concerts: [
+              createMockConcert({
+                id: '1',
+                cancelPostId: undefined
+              })
+            ]
           })
         ],
-        lastAnnouncementDate: undefined,
-        weeklyPostId: undefined
+        lastTourGenerationDate: undefined
       });
 
       let savedData: string = '';
@@ -97,11 +115,9 @@ describe('storage', () => {
       await saveState(originalState);
       const loadedState = await loadState();
 
-      expect(loadedState.concerts[0].cancellationDate).toBeUndefined();
-      expect(loadedState.concerts[0].postId).toBeUndefined();
-      expect(loadedState.concerts[0].cancelPostId).toBeUndefined();
-      expect(loadedState.lastAnnouncementDate).toBeUndefined();
-      expect(loadedState.weeklyPostId).toBeUndefined();
+      expect(loadedState.tours[0].overviewPostId).toBeUndefined();
+      expect(loadedState.tours[0].concerts[0].cancelPostId).toBeUndefined();
+      expect(loadedState.lastTourGenerationDate).toBeUndefined();
     });
   });
 
@@ -112,7 +128,7 @@ describe('storage', () => {
       vi.mocked(mkdir).mockImplementation(mocks.mkdir);
       vi.mocked(writeFile).mockImplementation(mocks.writeFile);
       vi.mocked(rename).mockImplementation(mocks.rename);
-      vi.mocked(readFile).mockResolvedValue('{"concerts":[]}');
+      vi.mocked(readFile).mockResolvedValue('{"tours":[]}');
 
       await loadState();
 
@@ -133,30 +149,39 @@ describe('storage', () => {
 
       const state = await loadState();
 
-      expect(state.concerts).toEqual([]);
+      expect(state.tours).toEqual([]);
       // Verify empty state was saved
       expect(writeFile).toHaveBeenCalledWith(
         expect.stringMatching(/\.tmp$/),
-        expect.stringContaining('concerts'),
+        expect.stringContaining('tours'),
         'utf-8'
       );
     });
 
     it('successfully loads existing state file', async () => {
       const mockData = {
-        concerts: [
+        tours: [
           {
-            id: '1',
-            venue: { name: 'Test', city: 'City' },
-            date: '2026-03-15T20:00:00.000Z',
+            id: 'tour-1',
+            continent: 'Europe',
+            startDate: '2026-03-15T20:00:00.000Z',
+            endDate: '2026-03-29T22:00:00.000Z',
             announcementDate: '2026-03-10T12:00:00.000Z',
-            cancellationDate: '2026-03-14T22:00:00.000Z',
-            isPinned: false,
-            isCanceled: false
+            overviewPostId: 'overview-123',
+            weeklyPostIds: ['week1-456'],
+            concerts: [
+              {
+                id: '1',
+                venue: { name: 'Test', city: 'City', continent: 'Europe' },
+                date: '2026-03-15T20:00:00.000Z',
+                cancellationDate: '2026-03-14T22:00:00.000Z',
+                weekInTour: 1,
+                isCanceled: false
+              }
+            ]
           }
         ],
-        lastAnnouncementDate: '2026-03-10T12:00:00.000Z',
-        weeklyPostId: 'post-123'
+        lastTourGenerationDate: '2026-03-10T12:00:00.000Z'
       };
 
       const mocks = setupFileSystemMocks({
@@ -168,14 +193,18 @@ describe('storage', () => {
 
       const state = await loadState();
 
-      expect(state.concerts).toHaveLength(1);
-      expect(state.concerts[0].id).toBe('1');
-      expect(state.concerts[0].venue.name).toBe('Test');
-      expect(state.concerts[0].venue.city).toBe('City');
-      expect(state.concerts[0].date).toBeInstanceOf(Date);
-      expect(state.concerts[0].announcementDate).toBeInstanceOf(Date);
-      expect(state.concerts[0].cancellationDate).toBeInstanceOf(Date);
-      expect(state.lastAnnouncementDate).toBeInstanceOf(Date);
+      expect(state.tours).toHaveLength(1);
+      expect(state.tours[0].id).toBe('tour-1');
+      expect(state.tours[0].continent).toBe('Europe');
+      expect(state.tours[0].startDate).toBeInstanceOf(Date);
+      expect(state.tours[0].endDate).toBeInstanceOf(Date);
+      expect(state.tours[0].announcementDate).toBeInstanceOf(Date);
+      expect(state.tours[0].concerts[0].id).toBe('1');
+      expect(state.tours[0].concerts[0].venue.name).toBe('Test');
+      expect(state.tours[0].concerts[0].venue.city).toBe('City');
+      expect(state.tours[0].concerts[0].date).toBeInstanceOf(Date);
+      expect(state.tours[0].concerts[0].cancellationDate).toBeInstanceOf(Date);
+      expect(state.lastTourGenerationDate).toBeInstanceOf(Date);
     });
 
     it('handles corrupted JSON by creating backup and returning empty state', async () => {
@@ -192,7 +221,7 @@ describe('storage', () => {
 
       const state = await loadState();
 
-      expect(state.concerts).toEqual([]);
+      expect(state.tours).toEqual([]);
       expect(writeFile).toHaveBeenCalledWith(
         expect.stringMatching(/concerts\.json\.backup-\d+$/),
         corruptedData
@@ -207,7 +236,7 @@ describe('storage', () => {
 
       const state = await loadState();
 
-      expect(state.concerts).toEqual([]);
+      expect(state.tours).toEqual([]);
     });
 
     it('returns empty state when directory creation fails', async () => {
@@ -218,7 +247,7 @@ describe('storage', () => {
       const state = await loadState();
 
       // Should catch error and return empty state
-      expect(state.concerts).toEqual([]);
+      expect(state.tours).toEqual([]);
     });
   });
 
@@ -241,11 +270,20 @@ describe('storage', () => {
 
     it('serializes state correctly', async () => {
       const state = createMockState({
-        concerts: [
-          createMockConcert({
-            id: '1',
-            date: new Date('2026-03-15T20:00:00Z'),
-            announcementDate: new Date('2026-03-10T12:00:00Z')
+        tours: [
+          createMockTour({
+            id: 'tour-1',
+            continent: Continent.Europe,
+            startDate: new Date('2026-03-15T20:00:00Z'),
+            endDate: new Date('2026-03-29T22:00:00Z'),
+            announcementDate: new Date('2026-03-10T12:00:00Z'),
+            concerts: [
+              createMockConcert({
+                id: '1',
+                date: new Date('2026-03-15T20:00:00Z'),
+                cancellationDate: new Date('2026-03-14T22:00:00Z')
+              })
+            ]
           })
         ]
       });
@@ -262,18 +300,25 @@ describe('storage', () => {
       await saveState(state);
 
       const parsed = JSON.parse(savedContent);
-      expect(parsed.concerts).toHaveLength(1);
-      expect(parsed.concerts[0].id).toBe('1');
-      // Venue object serialized as plain object (not Date)
-      expect(parsed.concerts[0].venue).toEqual(state.concerts[0].venue);
-      expect(typeof parsed.concerts[0].venue.name).toBe('string');
-      expect(typeof parsed.concerts[0].venue.city).toBe('string');
-      // Dates serialized to ISO strings
-      expect(parsed.concerts[0].date).toBe('2026-03-15T20:00:00.000Z');
-      expect(parsed.concerts[0].announcementDate).toBe('2026-03-10T12:00:00.000Z');
+      expect(parsed.tours).toHaveLength(1);
+      expect(parsed.tours[0].id).toBe('tour-1');
+      expect(parsed.tours[0].continent).toBe('Europe');
+      // Tour dates serialized to ISO strings
+      expect(parsed.tours[0].startDate).toBe('2026-03-15T20:00:00.000Z');
+      expect(parsed.tours[0].endDate).toBe('2026-03-29T22:00:00.000Z');
+      expect(parsed.tours[0].announcementDate).toBe('2026-03-10T12:00:00.000Z');
+      // Concert data serialized
+      expect(parsed.tours[0].concerts).toHaveLength(1);
+      expect(parsed.tours[0].concerts[0].id).toBe('1');
+      // Venue object serialized as plain object
+      expect(parsed.tours[0].concerts[0].venue).toEqual(state.tours[0].concerts[0].venue);
+      expect(typeof parsed.tours[0].concerts[0].venue.name).toBe('string');
+      expect(typeof parsed.tours[0].concerts[0].venue.city).toBe('string');
+      // Concert dates serialized to ISO strings
+      expect(parsed.tours[0].concerts[0].date).toBe('2026-03-15T20:00:00.000Z');
+      expect(parsed.tours[0].concerts[0].cancellationDate).toBe('2026-03-14T22:00:00.000Z');
       // Boolean flags preserved
-      expect(parsed.concerts[0].isPinned).toBe(false);
-      expect(parsed.concerts[0].isCanceled).toBe(false);
+      expect(parsed.tours[0].concerts[0].isCanceled).toBe(false);
     });
 
     it('uses atomic write pattern', async () => {

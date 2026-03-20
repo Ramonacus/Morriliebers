@@ -32,8 +32,9 @@ export async function initializeClient(): Promise<BlueskyClient> {
 export async function loadAndValidateState(): Promise<State> {
   try {
     const state = await loadState();
+    const totalConcerts = state.tours.reduce((sum, tour) => sum + tour.concerts.length, 0);
     console.log(
-      `[Scripts] Loaded state with ${state.concerts.length} concerts`,
+      `[Scripts] Loaded state with ${state.tours.length} tours (${totalConcerts} concerts)`,
     );
     return state;
   } catch (error) {
