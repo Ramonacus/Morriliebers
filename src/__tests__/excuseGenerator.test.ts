@@ -19,7 +19,7 @@ describe('ExcuseGenerator', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockConcert = createMockConcert({
-      venue: { name: 'Sala But', city: 'Madrid' },
+      venue: { name: 'Sala But', city: 'Madrid', continent: 'Europe' },
       date: new Date('2026-03-20T20:00:00'),
     });
     // Set API key for tests that need it (will be removed in specific test)
@@ -38,7 +38,7 @@ describe('ExcuseGenerator', () => {
       text: mockExcuse,
       finishReason: 'stop',
       usage: { promptTokens: 50, completionTokens: 20, totalTokens: 70 },
-    } as Awaited<ReturnType<typeof generateText>>);
+    } as unknown as Awaited<ReturnType<typeof generateText>>);
 
     const result = await generateExcuse(mockConcert);
 
@@ -65,7 +65,7 @@ describe('ExcuseGenerator', () => {
         text: mockExcuse,
         finishReason: 'stop',
         usage: { promptTokens: 50, completionTokens: 20, totalTokens: 70 },
-      } as Awaited<ReturnType<typeof generateText>>);
+      } as unknown as Awaited<ReturnType<typeof generateText>>);
 
     const promise = generateExcuse(mockConcert);
 
@@ -114,7 +114,7 @@ describe('ExcuseGenerator', () => {
       text: mockExcuse,
       finishReason: 'stop',
       usage: { promptTokens: 50, completionTokens: 20, totalTokens: 70 },
-    } as Awaited<ReturnType<typeof generateText>>);
+    } as unknown as Awaited<ReturnType<typeof generateText>>);
 
     await generateExcuse(mockConcert);
 
@@ -151,7 +151,7 @@ describe('ExcuseGenerator', () => {
       text: mockExcuse,
       finishReason: 'stop',
       usage: { promptTokens: 50, completionTokens: 20, totalTokens: 70 },
-    } as Awaited<ReturnType<typeof generateText>>);
+    } as unknown as Awaited<ReturnType<typeof generateText>>);
 
     await generateExcuse(mockConcert);
 
