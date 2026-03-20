@@ -1,7 +1,5 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
-
 ## Project Overview
 
 Automated Bluesky bot for Morriliebers (Morrissey tribute band) that announces continent-based tours spanning 2-4 weeks and then cancels individual shows 20-24 hours before showtime. The bot runs continuously, checking every 42 minutes for tour generation and cancellation triggers.
@@ -72,7 +70,7 @@ Key functions determine bot behavior:
 - Authentication via app password
 - `postTourAnnouncement(tour)` - Overview post + weekly reply threads, returns all post URIs
   - Format: Overview with continent and date range, weekly replies with show details
-  - Spanish text with emoji flags for each continent
+  - English text with emoji flags for each continent
 - `postCancellation(concert)` - Individual cancellation post with AI-generated excuse
 
 ### Excuse Generation (excuseGenerator.ts)
@@ -90,23 +88,6 @@ Key functions determine bot behavior:
 - `getRandomVenue()` - Random venue selection
 - Data source: `config/venues.json`
 
-## Important Patterns
-
-### Date Handling
-All dates are stored as Date objects in memory, serialized to ISO strings in JSON. Spain timezone is implicit for all scheduling logic.
-
-### State Consistency
-Always `await saveState(state)` after mutations. The bot saves state after every announcement, cancellation, and pin/unpin operation to survive crashes.
-
-### Week Boundaries
-Week starts on Monday (ISO 8601). The `getWeekStart()` utility (duplicated in multiple files) normalizes dates to Monday 00:00:00 for week comparisons.
-
-### Post URIs
-Bluesky posts return `at://` URIs used for:
-- Pinning/unpinning
-- Linking cancellations to original announcements
-- State tracking (`postId`, `cancelPostId`)
-
 ## Testing Architecture
 
 All tests passing after tour system migration and legacy code removal.
@@ -114,33 +95,6 @@ All tests passing after tour system migration and legacy code removal.
 - **Test helpers** (`helpers.js`): Utilities for mocking time, randomness, filesystem
 - **Isolation**: No network calls, no file writes, deterministic results
 - **Coverage**: Core modules fully tested including tour generator, scheduler, storage, and Bluesky client
-
-**Test Status**:
-- ✅ All tests passing after tour system migration
-- ✅ `tourGenerator.test.ts` - 13 tests
-- ✅ `scheduler.test.ts` - 4 tests (legacy tests removed)
-- ✅ `venues.test.ts` - 12 tests
-- ✅ `storage.test.ts` - 12 tests
-- ✅ `blueskyClient.test.ts` - 12 tests
-
-Key testing patterns:
-- Mock `Date` via global assignment for time-dependent tests
-- Mock `Math.random()` for deterministic venue/concert generation
-- Mock filesystem via in-memory state for storage tests
-- Mock Bluesky API with jest-like mock functions
-
-## Environment Variables
-
-```bash
-# Required
-BLUESKY_IDENTIFIER=handle.bsky.social
-BLUESKY_APP_PASSWORD=xxxx-xxxx-xxxx-xxxx
-
-# Optional (falls back to static message)
-GOOGLE_GENERATIVE_AI_API_KEY=your-gemini-api-key
-```
-
-Get Bluesky app password: Settings > App Passwords in Bluesky app.
 
 ## File Structure Conventions
 
@@ -151,33 +105,6 @@ Get Bluesky app password: Settings > App Passwords in Bluesky app.
 - `data/` - Runtime state (gitignored, created on first run)
 - `dist/` - Compiled output (gitignored)
 - `docs/specs/` - Design specifications for architectural changes
-
-## Design Evolution
-
-The `docs/specs/` directory contains design specifications for significant architectural changes.
-
-**Completed Implementation**: Continent-based tour system per `docs/specs/2026-03-19-continent-tour-system-design.md`
-
-- ✅ Data model (Continent enum, Tour/Concert interfaces)
-- ✅ Venue expansion (96+ venues, 48+ cities, 12+ per continent)
-- ✅ Venue validation at startup
-- ✅ Tour generator with weighted continent selection
-- ✅ Tour-based scheduler (`shouldGenerateTour`, `hasActiveConcerts`)
-- ✅ Storage serialization/deserialization
-- ✅ Bluesky client multi-post announcements (overview + weekly threads)
-- ✅ Main orchestrator tour generation flow
-- ✅ All tests updated for new data model
-- ✅ Legacy code removed (concertGenerator, old scheduler functions, pinning logic, manual scripts)
-
-## Deployment Notes
-
-Production deployment uses pm2 process manager:
-```bash
-pm2 start dist/index.js --name morriliebers-bot
-pm2 logs morriliebers-bot
-pm2 restart morriliebers-bot
-pm2 stop morriliebers-bot
-```
 
 ## TypeScript Configuration
 
