@@ -288,6 +288,16 @@ ${concertLines}`;
         }
       }
 
+      // Defensive check - should never happen due to retry logic above
+      if (!response) {
+        throw new ThreadCreationError(
+          `Failed to post thread item ${i}: no response received`,
+          uris,
+          i,
+          new Error("No response from post attempt")
+        );
+      }
+
       uris.push(response.uri);
 
       if (i === 0) {
