@@ -101,21 +101,6 @@ pm2 save
 pm2 startup
 ```
 
-## Manual Commands
-
-For testing or manual control, you can trigger announcements and cancellations directly:
-
-```bash
-# Generate and announce weekly concerts
-# (bypasses Monday 10-14h restriction)
-npm run trigger:announce
-
-# Cancel the next chronologically upcoming concert
-npm run trigger:cancel-next
-```
-
-**Important:** Stop the bot (`pm2 stop morriliebers-bot`) before running manual commands to prevent state conflicts.
-
 ## How It Works
 
 1. **Every 42 minutes**, the bot checks:
@@ -190,10 +175,6 @@ morriliebers-bot/
 │   ├── concertGenerator.ts   # Concert generation
 │   ├── blueskyClient.ts      # Bluesky API wrapper
 │   ├── scheduler.ts          # Scheduling logic
-│   └── scripts/              # Manual trigger scripts
-│       ├── utils.ts          # Shared script utilities
-│       ├── announce.ts       # Manual announcement trigger
-│       └── cancel-next.ts    # Manual cancellation trigger
 ├── config/
 │   └── venues.json           # Venue list
 ├── data/
