@@ -175,12 +175,13 @@ describe('BlueskyClient', () => {
       expect(overviewCall.text).toContain('🎸');
     });
 
-    it('weekly posts are replies to overview', async () => {
+    it('weekly posts form a thread chain', async () => {
       const overviewUri = 'at://tour/overview/123';
+      const week1Uri = 'at://tour/week1/456';
       mockAgent.post
-        .mockResolvedValueOnce({ uri: overviewUri })
-        .mockResolvedValueOnce({ uri: 'at://tour/week1/456' })
-        .mockResolvedValueOnce({ uri: 'at://tour/week2/789' });
+        .mockResolvedValueOnce({ uri: overviewUri, cid: 'cid-overview' })
+        .mockResolvedValueOnce({ uri: week1Uri, cid: 'cid-week1' })
+        .mockResolvedValueOnce({ uri: 'at://tour/week2/789', cid: 'cid-week2' });
 
       const client = new BlueskyClient('user.bsky.social', 'password');
 
@@ -193,17 +194,17 @@ describe('BlueskyClient', () => {
 
       await client.postTourAnnouncement(tour);
 
-      // Check week 1 post has reply structure
+      // Check week 1 post replies to overview
       const week1Call = mockAgent.post.mock.calls[1][0];
       expect(week1Call.reply).toBeDefined();
       expect(week1Call.reply.root.uri).toBe(overviewUri);
       expect(week1Call.reply.parent.uri).toBe(overviewUri);
 
-      // Check week 2 post has reply structure
+      // Check week 2 post replies to week 1 (chain), not overview
       const week2Call = mockAgent.post.mock.calls[2][0];
       expect(week2Call.reply).toBeDefined();
       expect(week2Call.reply.root.uri).toBe(overviewUri);
-      expect(week2Call.reply.parent.uri).toBe(overviewUri);
+      expect(week2Call.reply.parent.uri).toBe(week1Uri);
     });
 
     it('groups concerts by week in reply posts', async () => {
@@ -242,5 +243,91 @@ describe('BlueskyClient', () => {
       expect(week2Call.text).toContain('Venue C');
       expect(week2Call.text).not.toContain('Venue A');
     });
+  });
+
+  describe('createThread', () => {
+    it('posts single text without reply structure', async () => {
+      mockAgent.post.mockResolvedValue({ uri: 'at://post/single/123', cid: 'cid123' });
+
+      const client = new BlueskyClient('user.bsky.social', 'password');
+      const result = await client.createThread(['First post']);
+
+      expect(result).toEqual(['at://post/single/123']);
+      expect(mockAgent.post).toHaveBeenCalledTimes(1);
+      expect(mockAgent.post).toHaveBeenCalledWith({
+        text: 'First post'
+      });
+    });
+
+    it('chains multiple posts with each replying to previous', async () => {
+      mockAgent.post
+        .mockResolvedValueOnce({ uri: 'at://post/1', cid: 'cid1' })
+        .mockResolvedValueOnce({ uri: 'at://post/2', cid: 'cid2' })
+        .mockResolvedValueOnce({ uri: 'at://post/3', cid: 'cid3' });
+
+      const client = new BlueskyClient('user.bsky.social', 'password');
+      const result = await client.createThread(['First', 'Second', 'Third']);
+
+      expect(result).toEqual(['at://post/1', 'at://post/2', 'at://post/3']);
+      expect(mockAgent.post).toHaveBeenCalledTimes(3);
+
+      // First post has no reply
+      expect(mockAgent.post).toHaveBeenNthCalledWith(1, {
+        text: 'First'
+      });
+
+      // Second post replies to first
+      expect(mockAgent.post).toHaveBeenNthCalledWith(2, {
+        text: 'Second',
+        reply: {
+          root: { uri: 'at://post/1', cid: 'cid1' },
+          parent: { uri: 'at://post/1', cid: 'cid1' }
+        }
+      });
+
+      // Third post replies to second (chain), root still first
+      expect(mockAgent.post).toHaveBeenNthCalledWith(3, {
+        text: 'Third',
+        reply: {
+          root: { uri: 'at://post/1', cid: 'cid1' },
+          parent: { uri: 'at://post/2', cid: 'cid2' }
+        }
+      });
+    });
+
+    it('retries failed post and succeeds', async () => {
+      let attempt = 0;
+      mockAgent.post.mockImplementation(() => {
+        attempt++;
+        if (attempt < 3) {
+          return Promise.reject(new Error('Network error'));
+        }
+        return Promise.resolve({ uri: 'at://post/success', cid: 'cid-success' });
+      });
+
+      const client = new BlueskyClient('user.bsky.social', 'password');
+      const result = await client.createThread(['Retry test']);
+
+      expect(result).toEqual(['at://post/success']);
+      expect(mockAgent.post).toHaveBeenCalledTimes(3);
+    });
+
+    it('throws ThreadCreationError after exhausting retries', async () => {
+      mockAgent.post
+        .mockResolvedValueOnce({ uri: 'at://post/1', cid: 'cid1' })
+        .mockRejectedValue(new Error('Persistent failure'));
+
+      const client = new BlueskyClient('user.bsky.social', 'password');
+
+      try {
+        await client.createThread(['First', 'Second']);
+        expect.fail('Should have thrown ThreadCreationError');
+      } catch (error: any) {
+        expect(error.name).toBe('ThreadCreationError');
+        expect(error.successfulPosts).toEqual(['at://post/1']);
+        expect(error.failedAtIndex).toBe(1);
+        expect(error.originalError.message).toBe('Persistent failure');
+      }
+    }, 35000);
   });
 });
