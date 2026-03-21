@@ -37,7 +37,7 @@ enum Continent {
   NorthAmerica = "North America",
   SouthAmerica = "South America",
   Europe = "Europe",
-  Asia = "Asia"
+  Asia = "Asia",
 }
 ```
 
@@ -45,14 +45,14 @@ enum Continent {
 
 ```typescript
 interface Tour {
-  id: string;                    // UUID
-  continent: Continent;          // Enum value
-  startDate: Date;               // First concert date
-  endDate: Date;                 // Last concert date
-  announcementDate: Date;        // When tour was announced
-  overviewPostId?: string;       // Tour overview post URI
-  weeklyPostIds: string[];       // Reply posts for each week [week1, week2, ...]
-  concerts: Concert[];           // All concerts in this tour
+  id: string; // UUID
+  continent: Continent; // Enum value
+  startDate: Date; // First concert date
+  endDate: Date; // Last concert date
+  announcementDate: Date; // When tour was announced
+  overviewPostId?: string; // Tour overview post URI
+  weeklyPostIds: string[]; // Reply posts for each week [week1, week2, ...]
+  concerts: Concert[]; // All concerts in this tour
 }
 ```
 
@@ -60,22 +60,24 @@ interface Tour {
 
 ```typescript
 interface Concert {
-  id: string;                    // UUID
-  venue: Venue;                  // Venue details
-  date: Date;                    // Concert date/time
-  cancellationDate: Date;        // When to cancel (20-24h before)
-  weekInTour: number;            // Which week: 1, 2, 3, or 4
-  isCanceled: boolean;           // Has been canceled
-  cancelPostId?: string;         // Cancellation post URI
+  id: string; // UUID
+  venue: Venue; // Venue details
+  date: Date; // Concert date/time
+  cancellationDate: Date; // When to cancel (20-24h before)
+  weekInTour: number; // Which week: 1, 2, 3, or 4
+  isCanceled: boolean; // Has been canceled
+  cancelPostId?: string; // Cancellation post URI
 }
 ```
 
 **Removed from Concert:**
+
 - `isPinned` - No longer using pinning
 - `postId` - Replaced by tour-level `overviewPostId`
 - `announcementDate` - Moved to tour level
 
 **Added to Concert:**
+
 - `weekInTour` - For grouping concerts into weekly posts
 
 #### Updated Venue Interface
@@ -84,7 +86,7 @@ interface Concert {
 interface Venue {
   name: string;
   city: string;
-  continent: Continent;          // Now uses enum instead of string
+  continent: Continent; // Now uses enum instead of string
   capacity?: string;
 }
 ```
@@ -93,12 +95,13 @@ interface Venue {
 
 ```typescript
 interface State {
-  tours: Tour[];                 // All tours (past and current)
+  tours: Tour[]; // All tours (past and current)
   lastTourGenerationDate?: Date; // Prevent multiple tours per day
 }
 ```
 
 **Removed from State:**
+
 - `concerts: Concert[]` - Now nested within tours
 - `lastAnnouncementDate` - Replaced by `lastTourGenerationDate`
 - `weeklyPostId` - Replaced by tour-level tracking
@@ -191,6 +194,7 @@ generateTour(referenceDate: Date = new Date()): Tour
 #### Example Output
 
 **3-week Europe tour:**
+
 - 8 shows across Barcelona, Berlin, Paris, London, Rome, Amsterdam, Madrid, Milan
 - Week 1: Barcelona (Wed), Berlin (Fri), Paris (Sun)
 - Week 2: London (Tue), Rome (Thu), Amsterdam (Sat)
@@ -207,6 +211,7 @@ shouldGenerateTour(state: State): boolean
 ```
 
 **Conditions (all must be true):**
+
 1. Current time is 8:00-14:00 (any day of week)
 2. All concerts in all tours are canceled
 3. No tour generated today (check `state.lastTourGenerationDate`)
@@ -220,6 +225,7 @@ getConcertsToCancelNow(tours: Tour[]): Concert[]
 ```
 
 **Logic:**
+
 - Iterate all concerts across all tours
 - Filter: `!concert.isCanceled && concert.cancellationDate <= now`
 - Return flat list of concerts to cancel
@@ -259,22 +265,25 @@ postTourAnnouncement(tour: Tour): Promise<{
 ```
 
 **Implementation:**
+
 1. Post tour overview with continent and date range
 2. For each week in tour, reply to overview with that week's concerts
 3. Return all post URIs
 
 **Overview Post Format:**
+
 ```
-🌍 ¡Gira por [Continent]! 🎸
+[Continent] Tour! 🎸
 
-Morriliebers anuncia su gira de [N] semanas por [Continent]
+Morriliebers announces their [N] week [Continent] tour!
 📅 [startDate] - [endDate]
-🎤 [N] conciertos confirmados
+🎤 [N] concerts confirmed
 
-Detalles en los comentarios ⬇️
+Details in the comments ⬇️
 ```
 
 **Weekly Reply Post Format:**
+
 ```
 📍 Semana [N] ([weekStart] - [weekEnd])
 
@@ -284,6 +293,7 @@ Detalles en los comentarios ⬇️
 ```
 
 **Example:**
+
 ```
 📍 Semana 1 (15-21 abril)
 
@@ -299,6 +309,7 @@ postCancellation(concert: Concert): Promise<string>
 ```
 
 **Format (unchanged):**
+
 ```
 Morriliebers lamenta anunciar la cancelación de su concierto en {venue} del día {dd/mm}
 ```
@@ -326,9 +337,11 @@ Minimum 12 cities per continent (max tour = 4 weeks × 3 shows = 12 cities)
 #### Cities to Add
 
 **North America:** +1 city
+
 - Seattle or Denver
 
 **South America:** +6 cities
+
 - Lima, Peru
 - Montevideo, Uruguay
 - Quito, Ecuador
@@ -337,11 +350,13 @@ Minimum 12 cities per continent (max tour = 4 weeks × 3 shows = 12 cities)
 - Asunción, Paraguay
 
 **Europe:** +3 cities
+
 - Lisbon, Portugal
 - Amsterdam, Netherlands
 - Brussels, Belgium
 
 **Asia:** +8 cities
+
 - Bangkok, Thailand
 - Chiang Mai, Thailand
 - Singapore
@@ -372,20 +387,22 @@ Minimum 12 cities per continent (max tour = 4 weeks × 3 shows = 12 cities)
 #### Initialization
 
 ```typescript
-async function initialize(): Promise<void>
+async function initialize(): Promise<void>;
 ```
 
 **Changes:**
+
 - State now loads tours instead of flat concert list
 - Venue validation runs automatically via module import
 
 #### Main Loop
 
 ```typescript
-async function mainLoop(): Promise<void>
+async function mainLoop(): Promise<void>;
 ```
 
 **Flow:**
+
 1. Check if should generate tour → `shouldGenerateTour(state)`
 2. If true: generate tour, post announcement, save state
 3. Check for concerts to cancel → `getConcertsToCancelNow(state.tours)`
@@ -394,10 +411,11 @@ async function mainLoop(): Promise<void>
 #### Tour Generation Handler
 
 ```typescript
-async function handleTourGeneration(): Promise<void>
+async function handleTourGeneration(): Promise<void>;
 ```
 
 **Logic:**
+
 ```typescript
 if (!shouldGenerateTour(state)) return;
 
@@ -405,7 +423,8 @@ if (!shouldGenerateTour(state)) return;
 const tour = generateTour();
 
 // Post announcement (overview + weekly replies)
-const { overviewPostId, weeklyPostIds } = await client.postTourAnnouncement(tour);
+const { overviewPostId, weeklyPostIds } =
+  await client.postTourAnnouncement(tour);
 
 // Update tour with post IDs
 tour.overviewPostId = overviewPostId;
@@ -421,10 +440,11 @@ await saveState(state);
 #### Cancellation Handler
 
 ```typescript
-async function handleCancellations(): Promise<void>
+async function handleCancellations(): Promise<void>;
 ```
 
 **Logic (simplified):**
+
 ```typescript
 const concertsToCancel = getConcertsToCancelNow(state.tours);
 
@@ -437,6 +457,7 @@ for (const concert of concertsToCancel) {
 ```
 
 **Removed:**
+
 - Pin/unpin logic
 - Week-based concert tracking
 
@@ -447,10 +468,12 @@ for (const concert of concertsToCancel) {
 Existing `data/concerts.json` structure is incompatible with new tour-based structure.
 
 **Options:**
+
 1. **Clean slate:** Archive old state, start fresh
 2. **One-time migration:** Convert flat concert list to tours (complex)
 
 **Recommendation:** Clean slate approach
+
 - Simpler implementation
 - No legacy data baggage
 - Tours are new concept, clean break makes sense

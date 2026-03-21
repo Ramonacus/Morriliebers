@@ -12,13 +12,14 @@ Automated Bluesky bot for Morriliebers (Morrissey tribute band) that announces w
 
 ## Prerequisites
 
-- Node.js 18+
+- Node.js 22+
 - Bluesky account with app password
 - (Optional) Google Gemini API key for AI-generated cancellation excuses
 
 ## Dependencies
 
 The project uses:
+
 - `ai` - Vercel AI SDK
 - `@ai-sdk/google` - Google Gemini integration
 - `@atproto/api` - Bluesky API client
@@ -26,6 +27,7 @@ The project uses:
 ## Setup
 
 1. **Clone and install:**
+
    ```bash
    git clone <repository-url>
    cd morriliebers-bot
@@ -33,6 +35,7 @@ The project uses:
    ```
 
 2. **Configure credentials:**
+
    ```bash
    cp .env.example .env
    # Edit .env and add your Bluesky credentials
@@ -132,6 +135,7 @@ npm run trigger:cancel-next
 ## Venues
 
 60 venues across 30 cities with 1M+ population:
+
 - **North America** (11 cities) → 22 venues (USA: 9 cities, Canada: 2 cities)
 - **South America** (6 cities) → 12 venues (Brazil, Argentina, Chile, Colombia)
 - **Europe** (9 cities) → 18 venues (Including Madrid and Barcelona)

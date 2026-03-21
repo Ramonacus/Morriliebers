@@ -1,6 +1,6 @@
-import { BskyAgent } from '@atproto/api';
-import type { Concert, Tour } from './types.js';
-import { generateExcuse } from './excuseGenerator.js';
+import { BskyAgent } from "@atproto/api";
+import type { Concert, Tour } from "./types.js";
+import { generateExcuse } from "./excuseGenerator.js";
 
 export class BlueskyClient {
   private agent: BskyAgent;
@@ -8,7 +8,7 @@ export class BlueskyClient {
   private password: string;
 
   constructor(identifier: string, password: string) {
-    this.agent = new BskyAgent({ service: 'https://bsky.social' });
+    this.agent = new BskyAgent({ service: "https://bsky.social" });
     this.identifier = identifier;
     this.password = password;
   }
@@ -18,16 +18,16 @@ export class BlueskyClient {
    */
   async authenticate(): Promise<void> {
     try {
-      console.log('[Bluesky] Authenticating...');
+      console.log("[Bluesky] Authenticating...");
       await this.agent.login({
         identifier: this.identifier,
         password: this.password,
       });
-      console.log('[Bluesky] Authentication successful');
+      console.log("[Bluesky] Authentication successful");
     } catch (error) {
-      console.error('[Bluesky] Authentication failed:');
+      console.error("[Bluesky] Authentication failed:");
       console.error(error);
-      throw new Error('Failed to authenticate with Bluesky');
+      throw new Error("Failed to authenticate with Bluesky");
     }
   }
 
@@ -35,17 +35,17 @@ export class BlueskyClient {
    * Format concert for announcement
    */
   private formatConcertLine(concert: Concert): string {
-    const dayName = concert.date.toLocaleDateString('en-US', {
-      weekday: 'long',
+    const dayName = concert.date.toLocaleDateString("en-US", {
+      weekday: "long",
     });
     const dayCapitalized = dayName.charAt(0).toUpperCase() + dayName.slice(1);
-    const dateStr = concert.date.toLocaleDateString('en-US', {
-      day: '2-digit',
-      month: '2-digit',
+    const dateStr = concert.date.toLocaleDateString("en-US", {
+      day: "2-digit",
+      month: "2-digit",
     });
-    const timeStr = concert.date.toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
+    const timeStr = concert.date.toLocaleTimeString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
       hour12: false,
     });
 
@@ -58,11 +58,11 @@ export class BlueskyClient {
    */
   async postWeeklyAnnouncement(concerts: Concert[]): Promise<string> {
     try {
-      console.log('[Bluesky] Posting weekly announcement...');
+      console.log("[Bluesky] Posting weekly announcement...");
 
       const concertLines = concerts
         .map((c) => this.formatConcertLine(c))
-        .join('\n');
+        .join("\n");
       const text = `Upcoming Morriliebers concerts:\n\n${concertLines}`;
 
       const response = await this.agent.post({
@@ -70,10 +70,10 @@ export class BlueskyClient {
         createdAt: new Date().toISOString(),
       });
 
-      console.log('[Bluesky] Weekly announcement posted:', response.uri);
+      console.log("[Bluesky] Weekly announcement posted:", response.uri);
       return response.uri;
     } catch (error) {
-      console.error('[Bluesky] Failed to post announcement:', error);
+      console.error("[Bluesky] Failed to post announcement:", error);
       throw error;
     }
   }
@@ -87,36 +87,36 @@ export class BlueskyClient {
     weeklyPostIds: string[];
   }> {
     try {
-      console.log('[Bluesky] Posting tour announcement...');
+      console.log("[Bluesky] Posting tour announcement...");
 
       // Format dates
-      const startStr = tour.startDate.toLocaleDateString('es-ES', {
-        day: 'numeric',
-        month: 'long'
+      const startStr = tour.startDate.toLocaleDateString("en-GB", {
+        day: "numeric",
+        month: "long",
       });
-      const endStr = tour.endDate.toLocaleDateString('es-ES', {
-        day: 'numeric',
-        month: 'long'
+      const endStr = tour.endDate.toLocaleDateString("en-GB", {
+        day: "numeric",
+        month: "long",
       });
 
       // Calculate tour duration in weeks
-      const weeks = Math.max(...tour.concerts.map(c => c.weekInTour));
+      const weeks = Math.max(...tour.concerts.map((c) => c.weekInTour));
 
       // Post overview
-      const overviewText = `🌍 ¡Gira por ${tour.continent}! 🎸
+      const overviewText = `🌍 ¡${tour.continent} Tour Coming up! 🎸
 
-Morriliebers anuncia su gira de ${weeks} semanas por ${tour.continent}
+Morriliebers will be touring ${tour.continent} during the next ${weeks} weeks:
 📅 ${startStr} - ${endStr}
-🎤 ${tour.concerts.length} conciertos confirmados
+🎤 ${tour.concerts.length} shows
 
-Detalles en los comentarios ⬇️`;
+Details in comments ⬇️`;
 
       const overviewResponse = await this.agent.post({
         text: overviewText,
         createdAt: new Date().toISOString(),
       });
 
-      console.log('[Bluesky] Tour overview posted:', overviewResponse.uri);
+      console.log("[Bluesky] Tour overview posted:", overviewResponse.uri);
 
       // Group concerts by week
       const concertsByWeek = new Map<number, Concert[]>();
@@ -140,27 +140,45 @@ Detalles en los comentarios ⬇️`;
         // Calculate week date range
         const weekStart = concerts[0].date;
         const weekEnd = concerts[concerts.length - 1].date;
-        const weekStartStr = weekStart.toLocaleDateString('es-ES', { day: 'numeric', month: 'long' });
-        const weekEndStr = weekEnd.toLocaleDateString('es-ES', { day: 'numeric', month: 'long' });
+        const weekStartStr = weekStart.toLocaleDateString("en-GB", {
+          day: "numeric",
+          month: "long",
+        });
+        const weekEndStr = weekEnd.toLocaleDateString("en-GB", {
+          day: "numeric",
+          month: "long",
+        });
 
         // Format concert lines with flag emojis
         const flagMap: Record<string, string> = {
-          'North America': '🇺🇸',
-          'South America': '🇧🇷',
-          'Europe': '🇪🇺',
-          'Asia': '🇯🇵'
+          "North America": "🇺🇸",
+          "South America": "🇧🇷",
+          Europe: "🇪🇺",
+          Asia: "🇯🇵",
         };
-        const flag = flagMap[tour.continent] || '🌍';
+        const flag = flagMap[tour.continent] || "🌍";
 
-        const concertLines = concerts.map(concert => {
-          const dayName = concert.date.toLocaleDateString('es-ES', { weekday: 'long' });
-          const dayCapitalized = dayName.charAt(0).toUpperCase() + dayName.slice(1);
-          const dateStr = concert.date.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' });
-          const timeStr = concert.date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', hour12: false });
-          return `${flag} ${dayCapitalized} ${dateStr} - ${timeStr} - ${concert.venue.name}, ${concert.venue.city}`;
-        }).join('\n');
+        const concertLines = concerts
+          .map((concert) => {
+            const dayName = concert.date.toLocaleDateString("en-GB", {
+              weekday: "long",
+            });
+            const dayCapitalized =
+              dayName.charAt(0).toUpperCase() + dayName.slice(1);
+            const dateStr = concert.date.toLocaleDateString("en-GB", {
+              day: "2-digit",
+              month: "2-digit",
+            });
+            const timeStr = concert.date.toLocaleTimeString("en-GB", {
+              hour: "2-digit",
+              minute: "2-digit",
+              hour12: false,
+            });
+            return `${flag} ${dayCapitalized} ${dateStr} - ${timeStr} - ${concert.venue.name}, ${concert.venue.city}`;
+          })
+          .join("\n");
 
-        const weekText = `📍 Semana ${week} (${weekStartStr} - ${weekEndStr})
+        const weekText = `📍 Week ${week} (${weekStartStr} - ${weekEndStr})
 
 ${concertLines}`;
 
@@ -170,22 +188,22 @@ ${concertLines}`;
           createdAt: new Date().toISOString(),
           reply: {
             root: { uri: overviewResponse.uri, cid: overviewResponse.cid },
-            parent: { uri: overviewResponse.uri, cid: overviewResponse.cid }
-          }
+            parent: { uri: overviewResponse.uri, cid: overviewResponse.cid },
+          },
         });
 
         weeklyPostIds.push(weekResponse.uri);
         console.log(`[Bluesky] Week ${week} post created:`, weekResponse.uri);
       }
 
-      console.log('[Bluesky] Tour announcement complete');
+      console.log("[Bluesky] Tour announcement complete");
 
       return {
         overviewPostId: overviewResponse.uri,
-        weeklyPostIds
+        weeklyPostIds,
       };
     } catch (error) {
-      console.error('[Bluesky] Failed to post tour announcement:', error);
+      console.error("[Bluesky] Failed to post tour announcement:", error);
       throw error;
     }
   }
@@ -196,7 +214,7 @@ ${concertLines}`;
    */
   async postCancellation(concert: Concert): Promise<string> {
     try {
-      console.log('[Bluesky] Posting cancellation...');
+      console.log("[Bluesky] Posting cancellation...");
 
       const text = await generateExcuse(concert);
 
@@ -205,12 +223,11 @@ ${concertLines}`;
         createdAt: new Date().toISOString(),
       });
 
-      console.log('[Bluesky] Cancellation posted:', response.uri);
+      console.log("[Bluesky] Cancellation posted:", response.uri);
       return response.uri;
     } catch (error) {
-      console.error('[Bluesky] Failed to post cancellation:', error);
+      console.error("[Bluesky] Failed to post cancellation:", error);
       throw error;
     }
   }
-
 }
