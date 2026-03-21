@@ -2,6 +2,35 @@ import { BskyAgent } from "@atproto/api";
 import type { Concert, Tour } from "./types.js";
 import { generateExcuse } from "./excuseGenerator.js";
 
+/**
+ * Sleep for specified milliseconds
+ */
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Error thrown when thread creation fails after retries
+ */
+export class ThreadCreationError extends Error {
+  successfulPosts: string[];
+  failedAtIndex: number;
+  originalError: Error;
+
+  constructor(
+    message: string,
+    successfulPosts: string[],
+    failedAtIndex: number,
+    originalError: Error
+  ) {
+    super(message);
+    this.name = "ThreadCreationError";
+    this.successfulPosts = successfulPosts;
+    this.failedAtIndex = failedAtIndex;
+    this.originalError = originalError;
+  }
+}
+
 export class BlueskyClient {
   private agent: BskyAgent;
   private identifier: string;
@@ -102,7 +131,7 @@ export class BlueskyClient {
       // Calculate tour duration in weeks
       const weeks = Math.max(...tour.concerts.map((c) => c.weekInTour));
 
-      // Post overview
+      // Format overview text
       const overviewText = `🌍 ¡${tour.continent} Tour Coming up! 🎸
 
 Morriliebers will be touring ${tour.continent} during the next ${weeks} weeks:
@@ -110,13 +139,6 @@ Morriliebers will be touring ${tour.continent} during the next ${weeks} weeks:
 🎤 ${tour.concerts.length} shows
 
 Details in comments ⬇️`;
-
-      const overviewResponse = await this.agent.post({
-        text: overviewText,
-        createdAt: new Date().toISOString(),
-      });
-
-      console.log("[Bluesky] Tour overview posted:", overviewResponse.uri);
 
       // Group concerts by week
       const concertsByWeek = new Map<number, Concert[]>();
@@ -128,8 +150,8 @@ Details in comments ⬇️`;
         concertsByWeek.get(week)!.push(concert);
       }
 
-      // Post weekly replies
-      const weeklyPostIds: string[] = [];
+      // Format weekly texts
+      const weeklyTexts: string[] = [];
       for (let week = 1; week <= weeks; week++) {
         const concerts = concertsByWeek.get(week) || [];
         if (concerts.length === 0) continue;
@@ -182,25 +204,21 @@ Details in comments ⬇️`;
 
 ${concertLines}`;
 
-        // Post as reply to overview
-        const weekResponse = await this.agent.post({
-          text: weekText,
-          createdAt: new Date().toISOString(),
-          reply: {
-            root: { uri: overviewResponse.uri, cid: overviewResponse.cid },
-            parent: { uri: overviewResponse.uri, cid: overviewResponse.cid },
-          },
-        });
-
-        weeklyPostIds.push(weekResponse.uri);
-        console.log(`[Bluesky] Week ${week} post created:`, weekResponse.uri);
+        weeklyTexts.push(weekText);
       }
 
+      // Create thread with overview and weekly posts
+      const postUris = await this.createThread([overviewText, ...weeklyTexts]);
+
+      console.log("[Bluesky] Tour overview posted:", postUris[0]);
+      for (let i = 1; i < postUris.length; i++) {
+        console.log(`[Bluesky] Week ${i} post created:`, postUris[i]);
+      }
       console.log("[Bluesky] Tour announcement complete");
 
       return {
-        overviewPostId: overviewResponse.uri,
-        weeklyPostIds,
+        overviewPostId: postUris[0],
+        weeklyPostIds: postUris.slice(1),
       };
     } catch (error) {
       console.error("[Bluesky] Failed to post tour announcement:", error);
@@ -229,5 +247,58 @@ ${concertLines}`;
       console.error("[Bluesky] Failed to post cancellation:", error);
       throw error;
     }
+  }
+
+  /**
+   * Create a thread by posting texts in sequence
+   * @returns Array of post URIs
+   */
+  async createThread(posts: string[]): Promise<string[]> {
+    const uris: string[] = [];
+    let rootUri: string | undefined;
+    let rootCid: string | undefined;
+    let parentUri: string | undefined;
+    let parentCid: string | undefined;
+
+    for (let i = 0; i < posts.length; i++) {
+      const postData: any = { text: posts[i] };
+
+      if (i > 0) {
+        postData.reply = {
+          root: { uri: rootUri, cid: rootCid },
+          parent: { uri: parentUri, cid: parentCid },
+        };
+      }
+
+      let response;
+      for (let attempt = 0; attempt < 5; attempt++) {
+        try {
+          response = await this.agent.post(postData);
+          break;
+        } catch (error) {
+          if (attempt === 4) {
+            throw new ThreadCreationError(
+              `Failed to post thread item ${i} after 5 attempts`,
+              uris,
+              i,
+              error as Error
+            );
+          }
+          await sleep(Math.pow(2, attempt) * 1000);
+        }
+      }
+
+      uris.push(response.uri);
+
+      if (i === 0) {
+        rootUri = response.uri;
+        rootCid = response.cid;
+      }
+
+      parentUri = response.uri;
+      parentCid = response.cid;
+    }
+
+    return uris;
   }
 }
