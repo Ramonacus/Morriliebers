@@ -6,11 +6,17 @@ vi.mock('../excuseGenerator.js', () => ({
   generateExcuse: vi.fn().mockResolvedValue('Mocked excuse message')
 }));
 
+// Mock announcement generator
+vi.mock('../announcementGenerator.js', () => ({
+  generateAnnouncement: vi.fn(),
+}));
+
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { BskyAgent } from '@atproto/api';
 import { BlueskyClient } from '../blueskyClient.js';
 import { createMockConcert, createMockTour } from './fixtures.js';
 import { generateExcuse } from '../excuseGenerator.js';
+import { generateAnnouncement } from '../announcementGenerator.js';
 import { Continent } from '../types.js';
 
 describe('BlueskyClient', () => {
@@ -26,6 +32,7 @@ describe('BlueskyClient', () => {
     };
 
     vi.mocked(BskyAgent).mockImplementation(() => mockAgent);
+    vi.mocked(generateAnnouncement).mockResolvedValue('Mocked AI announcement text');
   });
 
   describe('authenticate', () => {
@@ -116,6 +123,10 @@ describe('BlueskyClient', () => {
 
   describe('postTourAnnouncement', () => {
     it('posts overview and returns post URIs', async () => {
+      // Mock AI generation
+      const mockOverviewText = 'Europe tour announced! 8 shows over 3 weeks. Details below.';
+      vi.mocked(generateAnnouncement).mockResolvedValueOnce(mockOverviewText);
+
       // Mock post responses
       mockAgent.post
         .mockResolvedValueOnce({ uri: 'at://tour/overview/123' }) // Overview
@@ -124,7 +135,7 @@ describe('BlueskyClient', () => {
 
       const client = new BlueskyClient('user.bsky.social', 'password');
 
-      const tour = createMockTour({
+      const mockTour = createMockTour({
         continent: Continent.Europe,
         startDate: new Date('2026-03-15T20:00:00Z'),
         endDate: new Date('2026-03-29T22:00:00Z'),
@@ -144,14 +155,26 @@ describe('BlueskyClient', () => {
         ]
       });
 
-      const result = await client.postTourAnnouncement(tour);
+      const result = await client.postTourAnnouncement(mockTour);
 
       expect(result.overviewPostId).toBe('at://tour/overview/123');
       expect(result.weeklyPostIds).toEqual(['at://tour/week1/456', 'at://tour/week2/789']);
       expect(mockAgent.post).toHaveBeenCalledTimes(3);
+
+      // Verify AI generation was called with the tour
+      expect(generateAnnouncement).toHaveBeenCalledWith(mockTour);
+      // Verify AI-generated text was used in the overview post
+      expect(mockAgent.post).toHaveBeenCalledWith(
+        expect.objectContaining({
+          text: mockOverviewText,
+        })
+      );
     });
 
-    it('overview post includes continent and date range', async () => {
+    it('calls generateAnnouncement with the tour and uses result as overview text', async () => {
+      const aiText = 'Asia tour confirmed! 3 shows over 1 week starting 1 April.';
+      vi.mocked(generateAnnouncement).mockResolvedValueOnce(aiText);
+
       mockAgent.post
         .mockResolvedValueOnce({ uri: 'at://tour/overview/123' })
         .mockResolvedValueOnce({ uri: 'at://tour/week1/456' });
@@ -169,10 +192,9 @@ describe('BlueskyClient', () => {
 
       await client.postTourAnnouncement(tour);
 
+      expect(generateAnnouncement).toHaveBeenCalledWith(tour);
       const overviewCall = mockAgent.post.mock.calls[0][0];
-      expect(overviewCall.text).toContain('Asia');
-      expect(overviewCall.text).toContain('🌍');
-      expect(overviewCall.text).toContain('🎸');
+      expect(overviewCall.text).toBe(aiText);
     });
 
     it('weekly posts form a thread chain', async () => {
