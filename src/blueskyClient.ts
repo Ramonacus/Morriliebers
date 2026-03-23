@@ -1,6 +1,7 @@
 import { BskyAgent } from "@atproto/api";
 import type { Concert, Tour } from "./types.js";
 import { generateExcuse } from "./excuseGenerator.js";
+import { generateAnnouncement } from "./announcementGenerator.js";
 
 /**
  * Sleep for specified milliseconds
@@ -131,14 +132,8 @@ export class BlueskyClient {
       // Calculate tour duration in weeks
       const weeks = Math.max(...tour.concerts.map((c) => c.weekInTour));
 
-      // Format overview text
-      const overviewText = `🌍 ¡${tour.continent} Tour Coming up! 🎸
-
-Morriliebers will be touring ${tour.continent} during the next ${weeks} weeks:
-📅 ${startStr} - ${endStr}
-🎤 ${tour.concerts.length} shows
-
-Details in comments ⬇️`;
+      // Generate AI overview text
+      const overviewText = await generateAnnouncement(tour);
 
       // Group concerts by week
       const concertsByWeek = new Map<number, Concert[]>();
