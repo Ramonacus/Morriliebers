@@ -90,22 +90,6 @@ export function shouldGenerateTour(state: State): boolean {
     return false;
   }
 
-  // Check if any concerts are still active
-  if (hasActiveConcerts(state.tours)) {
-    return false;
-  }
-
-  // Check if we've already generated a tour today
-  if (state.lastTourGenerationDate) {
-    const lastGenDate = new Date(state.lastTourGenerationDate);
-    const today = new Date(now);
-    today.setHours(0, 0, 0, 0);
-    lastGenDate.setHours(0, 0, 0, 0);
-
-    if (lastGenDate.getTime() === today.getTime()) {
-      return false;
-    }
-  }
-
-  return true;
+  // Check business rules
+  return canGenerateTour(state);
 }
