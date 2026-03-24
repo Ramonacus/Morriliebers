@@ -1,7 +1,8 @@
 import 'dotenv/config';
 import { BlueskyClient } from '../blueskyClient.js';
-import { loadState, saveState } from '../storage.js';
+import { loadState } from '../storage.js';
 import { getNextConcertToCancel } from '../scheduler.js';
+import { cancelConcert } from '../actions.js';
 
 // Environment variables
 const BLUESKY_IDENTIFIER = process.env.BLUESKY_IDENTIFIER;
@@ -52,30 +53,16 @@ async function cancelNext(): Promise<void> {
     process.exit(1);
   }
 
-  // Post cancellation
+  // Cancel concert
   console.log('[Force Cancel] Posting cancellation...');
-  let cancelPostId: string;
-
   try {
-    cancelPostId = await client.postCancellation(concert);
-    console.log(`[Force Cancel] Posted cancellation: ${cancelPostId}`);
+    await cancelConcert(client, state, concert);
+    console.log(`[Force Cancel] Posted cancellation: ${concert.cancelPostId}`);
+    console.log('[Force Cancel] ✓ Concert canceled successfully!');
   } catch (error) {
-    console.error('[Force Cancel] Failed to post cancellation:', error);
+    console.error('[Force Cancel] Failed to cancel concert:', error);
     process.exit(1);
   }
-
-  // Update state
-  concert.isCanceled = true;
-  concert.cancelPostId = cancelPostId;
-
-  try {
-    await saveState(state);
-    console.log('[Force Cancel] State saved successfully');
-  } catch (error) {
-    console.error('[Force Cancel] ⚠️  Failed to save state (post already live - state inconsistent):', error);
-  }
-
-  console.log('[Force Cancel] ✓ Concert canceled successfully!');
 }
 
 // Run script
