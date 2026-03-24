@@ -2,6 +2,7 @@ import { describe, it, expect, afterEach } from 'vitest';
 import {
   shouldGenerateTour,
   getConcertsToCancelNow,
+  canGenerateTour,
 } from '../scheduler.js';
 import { createMockState, createMockConcert, createMockTour } from './fixtures.js';
 import { setMockTime, resetMockTime } from './helpers.js';
@@ -162,5 +163,78 @@ describe('shouldGenerateTour', () => {
     });
 
     expect(shouldGenerateTour(state)).toBe(true);
+  });
+});
+
+describe('canGenerateTour', () => {
+  afterEach(() => {
+    resetMockTime();
+  });
+
+  it('returns true when all concerts canceled and no tour today', () => {
+    setMockTime(new Date('2026-03-20T10:00:00'));
+
+    const tour = createMockTour({
+      concerts: [
+        createMockConcert({ isCanceled: true }),
+        createMockConcert({ isCanceled: true })
+      ]
+    });
+
+    const state = createMockState({
+      tours: [tour],
+      lastTourGenerationDate: undefined
+    });
+
+    const result = canGenerateTour(state);
+    expect(result).toBe(true);
+  });
+
+  it('returns false when any concert is active', () => {
+    setMockTime(new Date('2026-03-20T10:00:00'));
+
+    const tour = createMockTour({
+      concerts: [
+        createMockConcert({ isCanceled: true }),
+        createMockConcert({ isCanceled: false }) // Active
+      ]
+    });
+
+    const state = createMockState({ tours: [tour] });
+
+    expect(canGenerateTour(state)).toBe(false);
+  });
+
+  it('returns false when tour already generated today', () => {
+    setMockTime(new Date('2026-03-20T10:00:00'));
+
+    const state = createMockState({
+      tours: [],
+      lastTourGenerationDate: new Date('2026-03-20T09:00:00') // Today
+    });
+
+    expect(canGenerateTour(state)).toBe(false);
+  });
+
+  it('returns true when tour generated yesterday', () => {
+    setMockTime(new Date('2026-03-20T10:00:00'));
+
+    const state = createMockState({
+      tours: [],
+      lastTourGenerationDate: new Date('2026-03-19T10:00:00') // Yesterday
+    });
+
+    expect(canGenerateTour(state)).toBe(true);
+  });
+
+  it('returns true when no tours exist', () => {
+    setMockTime(new Date('2026-03-20T10:00:00'));
+
+    const state = createMockState({
+      tours: [],
+      lastTourGenerationDate: undefined
+    });
+
+    expect(canGenerateTour(state)).toBe(true);
   });
 });

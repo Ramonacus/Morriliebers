@@ -52,6 +52,32 @@ export function hasActiveConcerts(tours: Tour[]): boolean {
 }
 
 /**
+ * Check if a tour can be generated based on business rules only (no time check)
+ * Conditions: all concerts canceled, no tour generated today
+ */
+export function canGenerateTour(state: State): boolean {
+  // Check if any concerts are still active
+  if (hasActiveConcerts(state.tours)) {
+    return false;
+  }
+
+  // Check if we've already generated a tour today
+  if (state.lastTourGenerationDate) {
+    const now = new Date();
+    const lastGenDate = new Date(state.lastTourGenerationDate);
+    const today = new Date(now);
+    today.setHours(0, 0, 0, 0);
+    lastGenDate.setHours(0, 0, 0, 0);
+
+    if (lastGenDate.getTime() === today.getTime()) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+/**
  * Check if a tour should be generated
  * Conditions: 8:00-14:00, all concerts canceled, no tour generated today
  */
