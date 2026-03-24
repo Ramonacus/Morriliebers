@@ -1,8 +1,8 @@
 import 'dotenv/config';
 import { BlueskyClient } from '../blueskyClient.js';
-import { loadState, saveState } from '../storage.js';
-import { generateTour } from '../tourGenerator.js';
+import { loadState } from '../storage.js';
 import { canGenerateTour, hasActiveConcerts } from '../scheduler.js';
+import { generateAndAnnounceTour } from '../actions.js';
 
 // Environment variables
 const BLUESKY_IDENTIFIER = process.env.BLUESKY_IDENTIFIER;
@@ -39,13 +39,6 @@ async function forceTour(): Promise<void> {
     console.log('[Force Tour] ✓ Business rule check: PASSED');
   }
 
-  // Generate tour
-  console.log('[Force Tour] Generating tour...');
-  const tour = generateTour();
-  const weeks = Math.max(...tour.concerts.map(c => c.weekInTour));
-  console.log(`[Force Tour] Generated ${tour.concerts.length}-concert tour of ${tour.continent} (${weeks} weeks)`);
-  console.log(`[Force Tour] Date range: ${tour.startDate.toISOString().split('T')[0]} to ${tour.endDate.toISOString().split('T')[0]}`);
-
   // Authenticate Bluesky client
   console.log('[Force Tour] Authenticating with Bluesky...');
   const client = new BlueskyClient(BLUESKY_IDENTIFIER!, BLUESKY_APP_PASSWORD!);
@@ -57,36 +50,25 @@ async function forceTour(): Promise<void> {
     process.exit(1);
   }
 
-  // Post tour announcement
-  console.log('[Force Tour] Posting tour announcement...');
+  // Generate and announce tour
+  console.log('[Force Tour] Generating and announcing tour...');
   try {
-    const announcementResult = await client.postTourAnnouncement(tour);
+    await generateAndAnnounceTour(client, state);
 
-    // Update tour with post IDs
-    tour.overviewPostId = announcementResult.overviewPostId;
-    tour.weeklyPostIds = announcementResult.weeklyPostIds;
-
-    console.log(`[Force Tour] Posted overview: ${announcementResult.overviewPostId}`);
-    announcementResult.weeklyPostIds.forEach((postId, index) => {
+    // Log success details
+    const tour = state.tours[state.tours.length - 1];
+    const weeks = Math.max(...tour.concerts.map(c => c.weekInTour));
+    console.log(`[Force Tour] Generated ${tour.concerts.length}-concert tour of ${tour.continent} (${weeks} weeks)`);
+    console.log(`[Force Tour] Date range: ${tour.startDate.toISOString().split('T')[0]} to ${tour.endDate.toISOString().split('T')[0]}`);
+    console.log(`[Force Tour] Posted overview: ${tour.overviewPostId}`);
+    tour.weeklyPostIds.forEach((postId, index) => {
       console.log(`[Force Tour] Posted week ${index + 1} thread: ${postId}`);
     });
+    console.log('[Force Tour] ✓ Tour announced successfully!');
   } catch (error) {
-    console.error('[Force Tour] Failed to post announcement:', error);
+    console.error('[Force Tour] Failed to generate and announce tour:', error);
     process.exit(1);
   }
-
-  // Update state
-  state.tours.push(tour);
-  state.lastTourGenerationDate = new Date();
-
-  try {
-    await saveState(state);
-    console.log('[Force Tour] State saved successfully');
-  } catch (error) {
-    console.error('[Force Tour] ⚠️  Failed to save state (posts already live):', error);
-  }
-
-  console.log('[Force Tour] ✓ Tour announced successfully!');
 }
 
 // Run script
