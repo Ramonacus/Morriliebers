@@ -1,11 +1,11 @@
 import 'dotenv/config';
 import { BlueskyClient } from './blueskyClient.js';
 import { loadState, saveState } from './storage.js';
-import { generateTour } from './tourGenerator.js';
 import {
   shouldGenerateTour,
   getConcertsToCancelNow,
 } from './scheduler.js';
+import { generateAndAnnounceTour, cancelConcert } from './actions.js';
 import type { State } from './types.js';
 
 // Configuration
@@ -53,23 +53,10 @@ async function handleTourGeneration(): Promise<void> {
   console.log('[Main] Time to generate new tour!');
 
   try {
-    // Generate tour
-    const tour = generateTour();
-    console.log(`[Main] Generated ${tour.concerts.length}-concert tour of ${tour.continent}`);
+    await generateAndAnnounceTour(client, state);
 
-    // Post tour announcement (overview + weekly threads)
-    const { overviewPostId, weeklyPostIds } = await client.postTourAnnouncement(tour);
-
-    // Update tour with post IDs
-    tour.overviewPostId = overviewPostId;
-    tour.weeklyPostIds = weeklyPostIds;
-
-    // Update state
-    state.tours.push(tour);
-    state.lastTourGenerationDate = new Date();
-
-    await saveState(state);
-
+    // Log success (tour info available in state.tours[state.tours.length - 1])
+    const tour = state.tours[state.tours.length - 1];
     console.log(`[Main] Tour announcement posted: ${tour.concerts.length} concerts over ${Math.max(...tour.concerts.map(c => c.weekInTour))} weeks`);
   } catch (error) {
     console.error('[Main] Error handling tour generation:', error);
@@ -90,15 +77,7 @@ async function handleCancellations(): Promise<void> {
 
   for (const concert of concertsToCancel) {
     try {
-      // Post cancellation
-      const cancelPostUri = await client.postCancellation(concert);
-
-      // Update concert state
-      concert.isCanceled = true;
-      concert.cancelPostId = cancelPostUri;
-
-      await saveState(state);
-
+      await cancelConcert(client, state, concert);
       console.log(`[Main] Canceled concert: ${concert.venue.name}, ${concert.venue.city}`);
     } catch (error) {
       console.error(`[Main] Error canceling concert ${concert.id}:`, error);

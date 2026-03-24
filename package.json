@@ -10,7 +10,9 @@
     "start": "node dist/index.js",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:ui": "vitest --ui"
+    "test:ui": "vitest --ui",
+    "force:tour": "tsx src/scripts/force-tour.ts",
+    "force:cancel": "tsx src/scripts/cancel-next.ts"
   },
   "keywords": [
     "bluesky",
