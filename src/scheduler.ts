@@ -93,3 +93,24 @@ export function shouldGenerateTour(state: State): boolean {
   // Check business rules
   return canGenerateTour(state);
 }
+
+/**
+ * Get the next concert to cancel (earliest cancellation date, not yet canceled)
+ * Does not check if cancellation time has arrived - returns next in queue
+ */
+export function getNextConcertToCancel(tours: Tour[]): Concert | null {
+  // Extract all concerts from all tours
+  const allConcerts = tours.flatMap(tour => tour.concerts);
+
+  // Filter to uncanceled concerts only
+  const uncanceled = allConcerts.filter(concert => !concert.isCanceled);
+
+  if (uncanceled.length === 0) {
+    return null;
+  }
+
+  // Sort by cancellation date (earliest first)
+  uncanceled.sort((a, b) => a.cancellationDate.getTime() - b.cancellationDate.getTime());
+
+  return uncanceled[0];
+}
