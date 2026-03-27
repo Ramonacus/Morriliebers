@@ -34,16 +34,12 @@ Current codebase issues:
 ```
 src/
   domain/
-    Concert.ts          # Concert class with behavior
-    Tour.ts             # Tour class with behavior
+    Concert.ts          # Concert class with behavior + cancellation + excuse generation
+    Tour.ts             # Tour class with behavior + generation + announcement
     BotState.ts         # State aggregate root
   infrastructure/
     StateRepository.ts  # Persistence layer
-    BlueskyClient.ts    # External API (existing, minor updates)
-  services/
-    TourGenerator.ts    # Tour creation service
-    ExcuseGenerator.ts  # AI excuse generation (keep as-is)
-    AnnouncementGenerator.ts # Tour announcements (keep as-is)
+    BlueskyClient.ts    # Low-level API transport
   index.ts              # Entry point, orchestration
   types.ts              # Continent enum, Venue interface
   venues.ts             # Venue data (keep as-is)
@@ -56,12 +52,12 @@ index.ts (orchestration)
     ↓
 BotState (aggregate root) ←→ StateRepository (persistence)
     ↓
-Tour (collection management)
+Tour (generation + announcement) → BlueskyClient (transport)
     ↓
-Concert (individual behavior)
+Concert (cancellation + excuse) → BlueskyClient (transport)
 ```
 
-Services (TourGenerator, BlueskyClient) are injected dependencies.
+Domain objects depend on BlueskyClient for posting, but orchestrate their own workflows.
 
 ## Domain Layer Design
 
@@ -100,6 +96,7 @@ class Concert {
   get cancelPostId(): string | undefined
 
   // Commands
+  async cancel(client: BlueskyClient): Promise<void>
   markCanceled(postId: string): void
 
   // Serialization
@@ -110,7 +107,8 @@ class Concert {
 
 **Key behaviors**:
 - `shouldCancelNow()`: Returns true if not canceled and cancellation date has passed
-- `markCanceled()`: Sets canceled flag and post ID (one-time operation)
+- `cancel()`: Generates excuse, posts to Bluesky, marks as canceled (orchestrates full cancellation flow)
+- `markCanceled()`: Internal method to set canceled flag and post ID
 - Immutable core properties (id, venue, date, etc.)
 
 ### Tour Class
@@ -153,7 +151,14 @@ class Tour {
 
   // Commands
   addConcert(concert: Concert): void
+  async announce(client: BlueskyClient): Promise<void>
   setAnnouncementPosts(overviewPostId: string, weeklyPostIds: string[]): void
+
+  // Factory methods (tour generation)
+  static generate(): Tour
+  private static selectContinent(): Continent
+  private static selectTourLength(): number
+  private static selectDistinctCities(continent: Continent, count: number): string[]
 
   // Serialization
   toJSON(): SerializedTour
@@ -165,7 +170,9 @@ class Tour {
 - `getConcertsToCancel()`: Filters concerts that should cancel now
 - `hasActiveConcerts()`: Checks if any concert is not canceled
 - `addConcert()`: Adds concert to internal collection
-- `setAnnouncementPosts()`: Records Bluesky post IDs after announcement
+- `announce()`: Generates announcement text, posts to Bluesky, records post IDs (orchestrates full announcement flow)
+- `setAnnouncementPosts()`: Internal method to record Bluesky post IDs
+- `Tour.generate()`: Static factory method that creates a new tour with concerts (replaces TourGenerator service)
 
 ### BotState Class (Aggregate Root)
 
@@ -232,53 +239,42 @@ class StateRepository {
 
 ### BlueskyClient Updates
 
-**Minimal changes**:
-- Keep existing class structure
-- Update method signatures to accept domain objects (Tour, Concert) instead of interfaces
-- Return types stay the same (post IDs)
+**Role**: Low-level transport layer for posting to Bluesky API
 
-**Methods remain**:
-- `authenticate()`
-- `postTourAnnouncement(tour: Tour)` - accepts Tour object
-- `postCancellation(concert: Concert)` - accepts Concert object
-- `postWeeklyAnnouncement()` - may be removed if unused
+**Changes**:
+- Keep existing authentication and posting logic
+- Simplify to just handle HTTP/API calls
+- Called by domain objects (`Tour.announce()`, `Concert.cancel()`), not by main loop
 
-## Service Layer Design
+**Methods**:
+- `authenticate()` - existing
+- `post(text: string, reply?: { root, parent })` - generic post method
+- Internal helpers for formatting remain but may be moved to domain objects
 
-### TourGenerator Service
+## Domain Object Responsibilities
 
-**Current**: Free function `generateTour()`
-**After**: Keep as class or namespace with static methods
+### Tour Generation and Announcement
 
-```typescript
-class TourGenerator {
-  static generate(): Tour {
-    const continent = TourGenerator.selectContinent();
-    const weeks = TourGenerator.selectTourLength();
-    // ... existing logic ...
+**Tour generation** (static factory method):
+- `Tour.generate()`: Creates new tour with concerts
+- Continent selection, tour length, city selection, concert scheduling
+- Returns fully constructed Tour object
 
-    // Create Tour object with concerts
-    return new Tour({
-      id: randomUUID(),
-      continent,
-      startDate,
-      endDate,
-      announcementDate: new Date(),
-      concerts: concerts.map(data => new Concert(data))
-    });
-  }
+**Tour announcement** (instance method):
+- `Tour.announce(client)`: Orchestrates announcement posting
+- Generates announcement text internally (uses logic from announcementGenerator.ts)
+- Posts overview + weekly threads via BlueskyClient
+- Records post IDs
 
-  // Keep existing helper methods as private static
-  private static selectContinent(): Continent { ... }
-  private static selectTourLength(): number { ... }
-  private static selectDistinctCities(...): string[] { ... }
-}
-```
+### Concert Cancellation
 
-### Other Services
+**Concert cancellation** (instance method):
+- `Concert.cancel(client)`: Orchestrates cancellation posting
+- Generates excuse text internally (uses logic from excuseGenerator.ts including AI)
+- Posts cancellation via BlueskyClient
+- Marks concert as canceled with post ID
 
-- `ExcuseGenerator`: Keep as-is (already uses AI SDK well)
-- `AnnouncementGenerator`: Keep as-is
+**Benefits**: Domain objects are self-contained. Tour knows how to announce itself, Concert knows how to cancel itself.
 
 ## Main Application Flow
 
@@ -286,9 +282,9 @@ class TourGenerator {
 
 ```typescript
 import { BotState } from './domain/BotState.js';
+import { Tour } from './domain/Tour.js';
 import { StateRepository } from './infrastructure/StateRepository.js';
 import { BlueskyClient } from './infrastructure/BlueskyClient.js';
-import { TourGenerator } from './services/TourGenerator.js';
 
 const CHECK_INTERVAL_MS = 42 * 60 * 1000;
 
@@ -305,18 +301,15 @@ async function mainLoop(): Promise<void> {
 
   // Tour generation
   if (state.shouldGenerateTour(now)) {
-    const tour = TourGenerator.generate();
-    const { overviewPostId, weeklyPostIds } = await client.postTourAnnouncement(tour);
-    tour.setAnnouncementPosts(overviewPostId, weeklyPostIds);
+    const tour = Tour.generate();
+    await tour.announce(client);
     state.addTour(tour);
     await repository.save(state);
   }
 
   // Cancellations
-  const concertsToCancel = state.getAllConcertsToCancel(now);
-  for (const concert of concertsToCancel) {
-    const postId = await client.postCancellation(concert);
-    concert.markCanceled(postId);
+  for (const concert of state.getAllConcertsToCancel(now)) {
+    await concert.cancel(client);
     await repository.save(state);
   }
 }
@@ -362,16 +355,13 @@ test('shouldGenerateTour returns true when conditions met', () => {
 
 ```
 src/domain/__tests__/
-  Concert.test.ts       # Concert behavior tests
-  Tour.test.ts          # Tour behavior tests
+  Concert.test.ts       # Concert behavior + cancellation + excuse generation
+  Tour.test.ts          # Tour behavior + generation + announcement
   BotState.test.ts      # State aggregate tests
 
 src/infrastructure/__tests__/
   StateRepository.test.ts  # Persistence tests (mock fs)
-  BlueskyClient.test.ts    # API tests (existing mocks)
-
-src/services/__tests__/
-  TourGenerator.test.ts    # Tour generation tests
+  BlueskyClient.test.ts    # API transport tests
 ```
 
 ### Integration Tests
@@ -386,13 +376,13 @@ Update to use domain objects instead of raw interfaces.
 ## Migration Path
 
 ### Phase 1: Create Domain Classes
-1. Create `src/domain/Concert.ts`
-2. Create `src/domain/Tour.ts`
+1. Create `src/domain/Concert.ts` (include cancellation + excuse generation from `excuseGenerator.ts`)
+2. Create `src/domain/Tour.ts` (include generation from `tourGenerator.ts` + announcement from `announcementGenerator.ts`)
 3. Create `src/domain/BotState.ts`
 4. Implement serialization methods (toJSON/fromJSON)
-5. Write unit tests for each class
+5. Write unit tests for each class (mock BlueskyClient)
 
-**Success criteria**: All domain classes have tests, serialization round-trips work
+**Success criteria**: All domain classes have tests, serialization round-trips work, Tour.generate() creates valid tours, Tour.announce() and Concert.cancel() work with mocked client
 
 ### Phase 2: Create Infrastructure
 1. Create `src/infrastructure/StateRepository.ts`
@@ -402,27 +392,23 @@ Update to use domain objects instead of raw interfaces.
 
 **Success criteria**: Repository loads/saves domain objects, Bluesky client works with new types
 
-### Phase 3: Update Services
-1. Refactor `TourGenerator` to return domain objects
-2. Keep `ExcuseGenerator` and `AnnouncementGenerator` as-is
-3. Update tests
-
-**Success criteria**: TourGenerator creates valid Tour objects
-
-### Phase 4: Refactor Main Application
-1. Update `index.ts` to use new architecture
-2. Remove `actions.ts` (logic now in domain/main loop)
+### Phase 3: Refactor Main Application
+1. Update `index.ts` to use domain objects (`Tour.generate()`, `tour.announce()`, `concert.cancel()`)
+2. Simplify main loop orchestration
 3. Update scripts (`force-tour.ts`, `cancel-next.ts`) to use new classes
 4. Run integration tests
 
 **Success criteria**: Bot runs with new architecture, all tests pass
 
-### Phase 5: Cleanup
+### Phase 4: Cleanup
 1. Delete `scheduler.ts` (logic in `BotState`)
 2. Delete `storage.ts` (replaced by `StateRepository`)
-3. Delete `actions.ts` (logic in main loop + domain)
-4. Update `types.ts` to only export Continent/Venue
-5. Update documentation
+3. Delete `actions.ts` (logic in domain objects)
+4. Delete `tourGenerator.ts` (logic in `Tour.generate()`)
+5. Delete `excuseGenerator.ts` (logic in `Concert.cancel()`)
+6. Delete `announcementGenerator.ts` (logic in `Tour.announce()`)
+7. Update `types.ts` to only export Continent/Venue
+8. Update CLAUDE.md documentation
 
 **Success criteria**: No dead code, documentation accurate
 
