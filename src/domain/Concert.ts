@@ -1,5 +1,6 @@
 import { generateText } from 'ai';
 import { google } from '@ai-sdk/google';
+import { GeminiTextResponseSchema } from '../infrastructure/schemas.js';
 import type { Venue } from '../types.js';
 
 export class Concert {
@@ -106,8 +107,11 @@ export class Concert {
         temperature: 1.0,
       });
 
-      console.log(`[Concert] Attempt ${attempt} succeeded: ${result.text.substring(0, 50)}...`);
-      return result.text;
+      // Validate response
+      const validated = GeminiTextResponseSchema.parse(result);
+
+      console.log(`[Concert] Attempt ${attempt} succeeded: ${validated.text.substring(0, 50)}...`);
+      return validated.text;
     } catch (error) {
       console.error(`[Concert] Attempt ${attempt} failed:`, error);
       throw error;

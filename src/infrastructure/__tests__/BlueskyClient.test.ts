@@ -23,7 +23,12 @@ describe('BlueskyClient', () => {
 
   describe('authenticate', () => {
     it('should authenticate successfully', async () => {
-      mockAgent.login.mockResolvedValue(undefined);
+      mockAgent.login.mockResolvedValue({
+        did: 'did:plc:test',
+        handle: 'test.bsky.social',
+        accessJwt: 'test-jwt',
+        refreshJwt: 'test-refresh'
+      });
 
       await client.authenticate();
 
@@ -80,6 +85,33 @@ describe('BlueskyClient', () => {
       mockAgent.post.mockRejectedValue(new Error('Post failed'));
 
       await expect(client.post('Test')).rejects.toThrow('Post failed');
+    });
+
+    it('should throw error on invalid response structure (empty URI)', async () => {
+      mockAgent.post.mockResolvedValue({
+        uri: '', // Invalid: empty URI
+        cid: 'cid-123'
+      });
+
+      await expect(client.post('Test')).rejects.toThrow();
+    });
+
+    it('should throw error on missing uri in response', async () => {
+      mockAgent.post.mockResolvedValue({
+        cid: 'cid-123'
+        // Missing uri
+      });
+
+      await expect(client.post('Test')).rejects.toThrow();
+    });
+
+    it('should throw error on missing cid in response', async () => {
+      mockAgent.post.mockResolvedValue({
+        uri: 'at://post-uri-123'
+        // Missing cid
+      });
+
+      await expect(client.post('Test')).rejects.toThrow();
     });
   });
 
@@ -166,6 +198,19 @@ describe('BlueskyClient', () => {
         text: 'Single post'
       });
     });
+
+    it('should throw ThreadCreationError on invalid post response in thread', async () => {
+      mockAgent.post
+        .mockResolvedValueOnce({ uri: 'at://post-1', cid: 'cid-1' })
+        .mockResolvedValue({ uri: '', cid: 'cid-2' }); // Invalid: empty URI on all subsequent calls
+
+      try {
+        await client.createThread(['First post', 'Second post']);
+        expect.fail('Should have thrown ThreadCreationError');
+      } catch (error) {
+        expect(error).toBeInstanceOf(ThreadCreationError);
+      }
+    }, 60000); // 60s timeout for retries
   });
 
   describe('ThreadCreationError', () => {

@@ -1,6 +1,7 @@
 import { randomUUID } from 'crypto';
 import { generateText } from 'ai';
 import { google } from '@ai-sdk/google';
+import { GeminiTextResponseSchema } from '../infrastructure/schemas.js';
 import { Continent } from '../types.js';
 import { Concert } from './Concert.js';
 import { venues } from '../venues.js';
@@ -195,8 +196,11 @@ ${concertLines}`;
         temperature: 1.0,
       });
 
-      console.log(`[Tour] Attempt ${attempt} succeeded: ${result.text.substring(0, 50)}...`);
-      return result.text;
+      // Validate response
+      const validated = GeminiTextResponseSchema.parse(result);
+
+      console.log(`[Tour] Attempt ${attempt} succeeded: ${validated.text.substring(0, 50)}...`);
+      return validated.text;
     } catch (error) {
       console.error(`[Tour] Attempt ${attempt} failed:`, error);
       throw error;

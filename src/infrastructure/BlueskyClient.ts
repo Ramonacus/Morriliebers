@@ -1,4 +1,5 @@
 import { BskyAgent } from '@atproto/api';
+import { BlueskyPostResponseSchema } from './schemas.js';
 
 /**
  * Sleep for specified milliseconds
@@ -46,10 +47,16 @@ export class BlueskyClient {
   async authenticate(): Promise<void> {
     try {
       console.log('[Bluesky] Authenticating...');
-      await this.agent.login({
+      const response = await this.agent.login({
         identifier: this.identifier,
         password: this.password,
       });
+
+      // Validate response structure (login returns session data)
+      if (!response || typeof response !== 'object') {
+        throw new Error('Invalid authentication response from Bluesky');
+      }
+
       console.log('[Bluesky] Authentication successful');
     } catch (error) {
       console.error('[Bluesky] Authentication failed:');
@@ -76,8 +83,12 @@ export class BlueskyClient {
       }
 
       const response = await this.agent.post(postData);
-      console.log('[Bluesky] Posted:', response.uri);
-      return response.uri;
+
+      // Validate response
+      const validated = BlueskyPostResponseSchema.parse(response);
+
+      console.log('[Bluesky] Posted:', validated.uri);
+      return validated.uri;
     } catch (error) {
       console.error('[Bluesky] Failed to post:', error);
       throw error;
@@ -108,7 +119,9 @@ export class BlueskyClient {
       let response;
       for (let attempt = 0; attempt < 5; attempt++) {
         try {
-          response = await this.agent.post(postData);
+          const rawResponse = await this.agent.post(postData);
+          // Validate response
+          response = BlueskyPostResponseSchema.parse(rawResponse);
           break;
         } catch (error) {
           if (attempt === 4) {
