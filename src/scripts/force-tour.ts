@@ -1,8 +1,14 @@
 import 'dotenv/config';
-import { BlueskyClient } from '../blueskyClient.js';
-import { loadState } from '../storage.js';
-import { canGenerateTour, hasActiveConcerts } from '../scheduler.js';
-import { generateAndAnnounceTour } from '../actions.js';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
+import { BlueskyClient } from '../infrastructure/BlueskyClient.js';
+import { StateRepository } from '../infrastructure/StateRepository.js';
+import { Tour } from '../domain/Tour.js';
+
+// File paths
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const STATE_FILE = join(__dirname, '..', '..', 'data', 'concerts.json');
 
 // Environment variables
 const BLUESKY_IDENTIFIER = process.env.BLUESKY_IDENTIFIER;
@@ -20,21 +26,41 @@ async function forceTour(): Promise<void> {
   console.log('[Force Tour] Loading state...');
 
   // Load current state
-  const state = await loadState();
-  const totalConcerts = state.tours.reduce((sum, tour) => sum + tour.concerts.length, 0);
-  console.log(`[Force Tour] Loaded ${state.tours.length} tours (${totalConcerts} concerts total)`);
+  const repository = new StateRepository(STATE_FILE);
+  const state = await repository.load();
+
+  const totalConcerts = state.getTours().reduce(
+    (sum, tour) => sum + tour.concerts.length,
+    0
+  );
+  console.log(
+    `[Force Tour] Loaded ${state.getTours().length} tours (${totalConcerts} concerts total)`
+  );
 
   // Check business rules (advisory only)
-  if (!canGenerateTour(state)) {
-    if (hasActiveConcerts(state.tours)) {
-      const activeConcerts = state.tours
-        .flatMap(tour => tour.concerts)
-        .filter(c => !c.isCanceled).length;
-      console.log(`[Force Tour] ⚠️  Business rule check: FAILED - ${activeConcerts} active concerts remain`);
-    } else {
-      console.log('[Force Tour] ⚠️  Business rule check: FAILED - Tour already generated today');
-    }
+  const hasActiveConcerts = state.getTours().some(tour => tour.hasActiveConcerts());
+
+  if (hasActiveConcerts) {
+    const activeConcerts = state
+      .getTours()
+      .flatMap(tour => tour.concerts)
+      .filter(c => c.isActive()).length;
+    console.log(
+      `[Force Tour] ⚠️  Business rule check: FAILED - ${activeConcerts} active concerts remain`
+    );
     console.log('[Force Tour] Proceeding anyway for testing purposes...');
+  } else if (state.lastTourGenerationDate) {
+    const lastGenDate = new Date(state.lastTourGenerationDate);
+    const today = new Date();
+    lastGenDate.setHours(0, 0, 0, 0);
+    today.setHours(0, 0, 0, 0);
+
+    if (lastGenDate.getTime() === today.getTime()) {
+      console.log('[Force Tour] ⚠️  Business rule check: FAILED - Tour already generated today');
+      console.log('[Force Tour] Proceeding anyway for testing purposes...');
+    } else {
+      console.log('[Force Tour] ✓ Business rule check: PASSED');
+    }
   } else {
     console.log('[Force Tour] ✓ Business rule check: PASSED');
   }
@@ -53,13 +79,21 @@ async function forceTour(): Promise<void> {
   // Generate and announce tour
   console.log('[Force Tour] Generating and announcing tour...');
   try {
-    await generateAndAnnounceTour(client, state);
+    const now = new Date();
+    const tour = Tour.generate(now);
+
+    await tour.announce(client);
+
+    state.addTour(tour, now);
+    await repository.save(state);
 
     // Log success details
-    const tour = state.tours[state.tours.length - 1];
-    const weeks = Math.max(...tour.concerts.map(c => c.weekInTour));
-    console.log(`[Force Tour] Generated ${tour.concerts.length}-concert tour of ${tour.continent} (${weeks} weeks)`);
-    console.log(`[Force Tour] Date range: ${tour.startDate.toISOString().split('T')[0]} to ${tour.endDate.toISOString().split('T')[0]}`);
+    console.log(
+      `[Force Tour] Generated ${tour.concerts.length}-concert tour of ${tour.continent} (${tour.getWeekCount()} weeks)`
+    );
+    console.log(
+      `[Force Tour] Date range: ${tour.startDate.toISOString().split('T')[0]} to ${tour.endDate.toISOString().split('T')[0]}`
+    );
     console.log(`[Force Tour] Posted overview: ${tour.overviewPostId}`);
     tour.weeklyPostIds.forEach((postId, index) => {
       console.log(`[Force Tour] Posted week ${index + 1} thread: ${postId}`);
