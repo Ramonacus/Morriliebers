@@ -1,4 +1,6 @@
 import { randomUUID } from 'crypto';
+import { generateText } from 'ai';
+import { google } from '@ai-sdk/google';
 import { Continent } from '../types.js';
 import { Concert } from './Concert.js';
 import { venues } from '../venues.js';
@@ -67,6 +69,201 @@ export class Tour {
   setAnnouncementPosts(overviewPostId: string, weeklyPostIds: string[]): void {
     this._overviewPostId = overviewPostId;
     this._weeklyPostIds = weeklyPostIds;
+  }
+
+  /**
+   * Announce the tour via Bluesky client
+   */
+  async announce(client: { createThread: (posts: string[]) => Promise<string[]> }): Promise<void> {
+    // 1. Generate AI overview text
+    const overviewText = await this.generateAnnouncementText();
+
+    // 2. Group concerts by week
+    const concertsByWeek = new Map<number, Concert[]>();
+    for (const concert of this._concerts) {
+      const week = concert.weekInTour;
+      if (!concertsByWeek.has(week)) {
+        concertsByWeek.set(week, []);
+      }
+      concertsByWeek.get(week)!.push(concert);
+    }
+
+    // 3. Format weekly posts
+    const weeklyTexts: string[] = [];
+    const weeks = this.getWeekCount();
+
+    for (let week = 1; week <= weeks; week++) {
+      const concerts = concertsByWeek.get(week) || [];
+      if (concerts.length === 0) continue;
+
+      // Sort concerts by date within week
+      concerts.sort((a, b) => a.date.getTime() - b.date.getTime());
+
+      // Calculate week date range
+      const weekStart = concerts[0].date;
+      const weekEnd = concerts[concerts.length - 1].date;
+      const weekStartStr = weekStart.toLocaleDateString('en-GB', {
+        day: 'numeric',
+        month: 'long'
+      });
+      const weekEndStr = weekEnd.toLocaleDateString('en-GB', {
+        day: 'numeric',
+        month: 'long'
+      });
+
+      // Format concert lines with flag emojis
+      const flagMap: Record<string, string> = {
+        'North America': '🇺🇸',
+        'South America': '🇧🇷',
+        'Europe': '🇪🇺',
+        'Asia': '🇯🇵'
+      };
+      const flag = flagMap[this.continent] || '🌍';
+
+      const concertLines = concerts
+        .map((concert) => {
+          const dayName = concert.date.toLocaleDateString('en-GB', {
+            weekday: 'long'
+          });
+          const dayCapitalized = dayName.charAt(0).toUpperCase() + dayName.slice(1);
+          const dateStr = concert.date.toLocaleDateString('en-GB', {
+            day: '2-digit',
+            month: '2-digit'
+          });
+          const timeStr = concert.date.toLocaleTimeString('en-GB', {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false
+          });
+          return `${flag} ${dayCapitalized} ${dateStr} - ${timeStr} - ${concert.venue.name}, ${concert.venue.city}`;
+        })
+        .join('\n');
+
+      const weekText = `📍 Week ${week} (${weekStartStr} - ${weekEndStr})
+
+${concertLines}`;
+
+      weeklyTexts.push(weekText);
+    }
+
+    // 4. Create thread via client
+    const postUris = await client.createThread([overviewText, ...weeklyTexts]);
+
+    // 5. Update internal state
+    this.setAnnouncementPosts(postUris[0], postUris.slice(1));
+  }
+
+  /**
+   * Generate AI announcement text with retry logic
+   */
+  private async generateAnnouncementText(): Promise<string> {
+    // Check if API key is available
+    if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
+      console.warn('[Tour] GOOGLE_GENERATIVE_AI_API_KEY not set, using fallback');
+      return this.getFallbackAnnouncementText();
+    }
+
+    try {
+      // Attempt 1
+      try {
+        return await this.generateWithGemini(1);
+      } catch (error) {
+        console.log('[Tour] Retrying in 1 minute...');
+
+        // Wait 1 minute before retry
+        await new Promise(resolve => setTimeout(resolve, 60000));
+
+        // Attempt 2
+        return await this.generateWithGemini(2);
+      }
+    } catch (error) {
+      console.warn('[Tour] Both attempts failed, using fallback message');
+      return this.getFallbackAnnouncementText();
+    }
+  }
+
+  /**
+   * Call Gemini API to generate announcement
+   */
+  private async generateWithGemini(attempt: number): Promise<string> {
+    try {
+      console.log(`[Tour] Attempt ${attempt}: Calling Gemini API`);
+
+      const result = await generateText({
+        model: google('gemini-2.5-flash'),
+        prompt: this.buildAnnouncementPrompt(),
+        temperature: 1.0,
+      });
+
+      console.log(`[Tour] Attempt ${attempt} succeeded: ${result.text.substring(0, 50)}...`);
+      return result.text;
+    } catch (error) {
+      console.error(`[Tour] Attempt ${attempt} failed:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Build prompt for Gemini to generate tour announcement
+   */
+  private buildAnnouncementPrompt(): string {
+    const startStr = this.startDate.toLocaleDateString('en-GB', {
+      day: 'numeric',
+      month: 'long',
+    });
+    const endStr = this.endDate.toLocaleDateString('en-GB', {
+      day: 'numeric',
+      month: 'long',
+    });
+    const weeks = this.getWeekCount();
+
+    return `You are generating a tour announcement for a Morrissey tribute band called "Morriliebers".
+
+Tour Details:
+- Continent: ${this.continent}
+- Date Range: ${startStr} - ${endStr}
+- Duration: ${weeks} weeks
+- Total Shows: ${this._concerts.length}
+
+Style Guidelines:
+- Balanced, professional tone with slight excitement
+- Write a legitimate band announcement (not over-the-top or dramatic)
+- Contrast with the dramatic/melancholic cancellation excuses
+- Keep it brief: 2-4 sentences, under 280 characters
+- MUST include: continent, date range, and show count
+- Write in English
+- Avoid ticket links or specific venue mentions (those go in reply posts)
+
+Example styles:
+- "Morriliebers announces their ${weeks}-week ${this.continent} tour! ${this._concerts.length} shows from ${startStr} to ${endStr}. Tickets on sale soon."
+- "Big news! Morriliebers is hitting ${this.continent} for ${this._concerts.length} concerts over ${weeks} weeks. See you on the road!"
+- "${this.continent} tour confirmed! Morriliebers will perform ${this._concerts.length} shows across ${weeks} weeks starting ${startStr}."
+
+Generate a professional tour announcement now:`;
+  }
+
+  /**
+   * Generate fallback message when AI generation fails
+   */
+  private getFallbackAnnouncementText(): string {
+    const startStr = this.startDate.toLocaleDateString('en-GB', {
+      day: 'numeric',
+      month: 'long',
+    });
+    const endStr = this.endDate.toLocaleDateString('en-GB', {
+      day: 'numeric',
+      month: 'long',
+    });
+
+    const weeks = this.getWeekCount();
+
+    return `🌍 ¡${this.continent} Tour Coming up! 🎸
+
+Morriliebers will be touring ${this.continent} during the next ${weeks} weeks:
+📅 ${startStr} - ${endStr}
+🎤 ${this._concerts.length} shows
+
+Details in comments ⬇️`;
   }
 
   toJSON() {

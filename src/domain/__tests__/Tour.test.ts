@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { Tour } from '../Tour.js';
 import { Concert } from '../Concert.js';
 import { Continent } from '../../types.js';
@@ -302,6 +302,91 @@ describe('Tour', () => {
       const tour = Tour.generate(new Date('2026-03-27T10:00:00Z'));
       const cities = new Set(tour.concerts.map(c => c.venue.city));
       expect(cities.size).toBe(tour.concerts.length);
+    });
+  });
+
+  describe('announce', () => {
+    it('should generate announcement and post via client', async () => {
+      const concert1 = new Concert({
+        id: 'concert-1',
+        venue: mockVenue,
+        date: new Date('2026-04-01T20:00:00Z'),
+        cancellationDate: new Date('2026-03-31T20:00:00Z'),
+        weekInTour: 1
+      });
+
+      const concert2 = new Concert({
+        id: 'concert-2',
+        venue: mockVenue,
+        date: new Date('2026-04-08T21:00:00Z'),
+        cancellationDate: new Date('2026-04-07T21:00:00Z'),
+        weekInTour: 2
+      });
+
+      const tour = new Tour({
+        id: 'tour-1',
+        continent: Continent.NorthAmerica,
+        startDate: new Date('2026-04-01T00:00:00Z'),
+        endDate: new Date('2026-04-14T00:00:00Z'),
+        announcementDate: new Date('2026-03-27T10:00:00Z'),
+        concerts: [concert1, concert2]
+      });
+
+      const mockClient = {
+        createThread: vi.fn().mockResolvedValue(['at://overview-uri', 'at://week1-uri', 'at://week2-uri'])
+      };
+
+      await tour.announce(mockClient as any);
+
+      expect(mockClient.createThread).toHaveBeenCalledOnce();
+      expect(mockClient.createThread).toHaveBeenCalledWith(
+        expect.arrayContaining([
+          expect.stringContaining('Morriliebers'), // Overview text
+          expect.stringContaining('Week 1'),        // Week 1 details
+          expect.stringContaining('Week 2')         // Week 2 details
+        ])
+      );
+      expect(tour.overviewPostId).toBe('at://overview-uri');
+      expect(tour.weeklyPostIds).toEqual(['at://week1-uri', 'at://week2-uri']);
+    });
+
+    it('should group concerts by week in announcement', async () => {
+      const concert1 = new Concert({
+        id: 'concert-1',
+        venue: mockVenue,
+        date: new Date('2026-04-01T20:00:00Z'),
+        cancellationDate: new Date('2026-03-31T20:00:00Z'),
+        weekInTour: 1
+      });
+
+      const concert2 = new Concert({
+        id: 'concert-2',
+        venue: { ...mockVenue, city: 'Test City 2' },
+        date: new Date('2026-04-03T19:00:00Z'),
+        cancellationDate: new Date('2026-04-02T19:00:00Z'),
+        weekInTour: 1
+      });
+
+      const tour = new Tour({
+        id: 'tour-1',
+        continent: Continent.NorthAmerica,
+        startDate: new Date('2026-04-01T00:00:00Z'),
+        endDate: new Date('2026-04-07T00:00:00Z'),
+        announcementDate: new Date('2026-03-27T10:00:00Z'),
+        concerts: [concert1, concert2]
+      });
+
+      const mockClient = {
+        createThread: vi.fn().mockResolvedValue(['at://overview-uri', 'at://week1-uri'])
+      };
+
+      await tour.announce(mockClient as any);
+
+      const threadPosts = mockClient.createThread.mock.calls[0][0] as string[];
+      // Should have 1 overview + 1 week post (both concerts in week 1)
+      expect(threadPosts).toHaveLength(2);
+      expect(threadPosts[1]).toContain('Test City');
+      expect(threadPosts[1]).toContain('Test City 2');
     });
   });
 
