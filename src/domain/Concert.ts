@@ -1,6 +1,6 @@
 import { generateText } from 'ai';
 import { google } from '@ai-sdk/google';
-import { GeminiTextResponseSchema } from '../infrastructure/schemas.js';
+import { LLMTextResponseSchema } from '../infrastructure/schemas.js';
 import type { Venue } from '../types.js';
 
 export class Concert {
@@ -81,7 +81,7 @@ export class Concert {
     try {
       // Attempt 1
       try {
-        return await this.generateExcuseWithGemini(1);
+        return await this.generateExcuseWithLLM(1);
       } catch (error) {
         console.log('[Concert] Retrying in 1 minute...');
 
@@ -89,7 +89,7 @@ export class Concert {
         await new Promise(resolve => setTimeout(resolve, 60000));
 
         // Attempt 2
-        return await this.generateExcuseWithGemini(2);
+        return await this.generateExcuseWithLLM(2);
       }
     } catch (error) {
       console.warn('[Concert] Both attempts failed, using fallback message');
@@ -97,9 +97,9 @@ export class Concert {
     }
   }
 
-  private async generateExcuseWithGemini(attempt: number): Promise<string> {
+  private async generateExcuseWithLLM(attempt: number): Promise<string> {
     try {
-      console.log(`[Concert] Attempt ${attempt}: Calling Gemini API`);
+      console.log(`[Concert] Attempt ${attempt}: Calling LLM API`);
 
       const result = await generateText({
         model: google('gemini-2.5-flash'),
@@ -108,7 +108,7 @@ export class Concert {
       });
 
       // Validate response
-      const validated = GeminiTextResponseSchema.parse(result);
+      const validated = LLMTextResponseSchema.parse(result);
 
       console.log(`[Concert] Attempt ${attempt} succeeded: ${validated.text.substring(0, 50)}...`);
       return validated.text;

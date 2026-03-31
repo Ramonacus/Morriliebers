@@ -20,9 +20,10 @@ export const BlueskyPostResponseSchema = z.object({
 });
 
 /**
- * Schema for Google Gemini generateText response
+ * Schema for LLM text generation response (Vercel AI SDK format)
+ * Currently used with Google Gemini, but provider-agnostic
  */
-export const GeminiTextResponseSchema = z.object({
+export const LLMTextResponseSchema = z.object({
   text: z.string().min(1, 'Generated text must not be empty'),
   finishReason: z.string().optional(),
   usage: z.object({
@@ -34,4 +35,4 @@ export const GeminiTextResponseSchema = z.object({
 
 export type BlueskyLoginResponse = z.infer<typeof BlueskyLoginResponseSchema>;
 export type BlueskyPostResponse = z.infer<typeof BlueskyPostResponseSchema>;
-export type GeminiTextResponse = z.infer<typeof GeminiTextResponseSchema>;
+export type LLMTextResponse = z.infer<typeof LLMTextResponseSchema>;
