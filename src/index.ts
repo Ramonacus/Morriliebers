@@ -1,15 +1,18 @@
 import 'dotenv/config';
-import { BlueskyClient } from './blueskyClient.js';
-import { loadState, saveState } from './storage.js';
-import {
-  shouldGenerateTour,
-  getConcertsToCancelNow,
-} from './scheduler.js';
-import { generateAndAnnounceTour, cancelConcert } from './actions.js';
-import type { State } from './types.js';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
+import { BlueskyClient } from './infrastructure/BlueskyClient.js';
+import { StateRepository } from './infrastructure/StateRepository.js';
+import { BotState } from './domain/BotState.js';
+import { Tour } from './domain/Tour.js';
 
 // Configuration
 const CHECK_INTERVAL_MS = 42 * 60 * 1000; // 42 minutes in milliseconds
+
+// File paths
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const STATE_FILE = join(__dirname, '..', 'data', 'concerts.json');
 
 // Environment variables
 const BLUESKY_IDENTIFIER = process.env.BLUESKY_IDENTIFIER;
@@ -21,7 +24,8 @@ if (!BLUESKY_IDENTIFIER || !BLUESKY_APP_PASSWORD) {
 }
 
 // Global state
-let state: State;
+let state: BotState;
+let repository: StateRepository;
 let client: BlueskyClient;
 
 /**
@@ -30,13 +34,23 @@ let client: BlueskyClient;
 async function initialize(): Promise<void> {
   console.log('[Main] Starting Morriliebers Bluesky Bot...');
 
-  // Load state
-  state = await loadState();
-  const totalConcerts = state.tours.reduce((sum, tour) => sum + tour.concerts.length, 0);
-  console.log(`[Main] Loaded state with ${state.tours.length} tours (${totalConcerts} concerts)`);
+  // Initialize repository and load state
+  repository = new StateRepository(STATE_FILE);
+  state = await repository.load();
+
+  const totalConcerts = state.getTours().reduce(
+    (sum, tour) => sum + tour.concerts.length,
+    0
+  );
+  console.log(
+    `[Main] Loaded state with ${state.getTours().length} tours (${totalConcerts} concerts)`
+  );
 
   // Initialize Bluesky client
-  client = new BlueskyClient(BLUESKY_IDENTIFIER as string, BLUESKY_APP_PASSWORD as string);
+  client = new BlueskyClient(
+    BLUESKY_IDENTIFIER as string,
+    BLUESKY_APP_PASSWORD as string
+  );
   await client.authenticate();
 
   console.log('[Main] Bot initialized successfully');
@@ -46,18 +60,28 @@ async function initialize(): Promise<void> {
  * Handle tour generation and announcement
  */
 async function handleTourGeneration(): Promise<void> {
-  if (!shouldGenerateTour(state)) {
+  const now = new Date();
+
+  if (!state.shouldGenerateTour(now)) {
     return;
   }
 
   console.log('[Main] Time to generate new tour!');
 
   try {
-    await generateAndAnnounceTour(client, state);
+    // Generate tour
+    const tour = Tour.generate(now);
 
-    // Log success (tour info available in state.tours[state.tours.length - 1])
-    const tour = state.tours[state.tours.length - 1];
-    console.log(`[Main] Tour announcement posted: ${tour.concerts.length} concerts over ${Math.max(...tour.concerts.map(c => c.weekInTour))} weeks`);
+    // Announce tour
+    await tour.announce(client);
+
+    // Add to state and save
+    state.addTour(tour, now);
+    await repository.save(state);
+
+    console.log(
+      `[Main] Tour announcement posted: ${tour.concerts.length} concerts over ${tour.getWeekCount()} weeks`
+    );
   } catch (error) {
     console.error('[Main] Error handling tour generation:', error);
   }
@@ -67,7 +91,8 @@ async function handleTourGeneration(): Promise<void> {
  * Handle concert cancellations
  */
 async function handleCancellations(): Promise<void> {
-  const concertsToCancel = getConcertsToCancelNow(state.tours);
+  const now = new Date();
+  const concertsToCancel = state.getAllConcertsToCancel(now);
 
   if (concertsToCancel.length === 0) {
     return;
@@ -77,8 +102,11 @@ async function handleCancellations(): Promise<void> {
 
   for (const concert of concertsToCancel) {
     try {
-      await cancelConcert(client, state, concert);
-      console.log(`[Main] Canceled concert: ${concert.venue.name}, ${concert.venue.city}`);
+      await concert.cancel(client);
+      await repository.save(state);
+      console.log(
+        `[Main] Canceled concert: ${concert.venue.name}, ${concert.venue.city}`
+      );
     } catch (error) {
       console.error(`[Main] Error canceling concert ${concert.id}:`, error);
     }
@@ -112,7 +140,7 @@ async function shutdown(): Promise<void> {
   console.log('\n[Main] Shutting down gracefully...');
 
   try {
-    await saveState(state);
+    await repository.save(state);
     console.log('[Main] State saved');
   } catch (error) {
     console.error('[Main] Error saving state during shutdown:', error);
@@ -137,7 +165,9 @@ process.on('SIGTERM', shutdown);
     // Then run on interval
     setInterval(mainLoop, CHECK_INTERVAL_MS);
 
-    console.log(`[Main] Bot running, checking every ${CHECK_INTERVAL_MS / 1000 / 60} minutes`);
+    console.log(
+      `[Main] Bot running, checking every ${CHECK_INTERVAL_MS / 1000 / 60} minutes`
+    );
   } catch (error) {
     console.error('[Main] Fatal error:', error);
     process.exit(1);
